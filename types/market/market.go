@@ -16,6 +16,7 @@ type market struct {
 	minQuantity      decimal.Decimal
 	maxQuantity      decimal.Decimal
 	quantityStepSize decimal.Decimal
+	tickerSvc        types.TickerSvc
 }
 
 type MarketConfig struct {
@@ -28,13 +29,21 @@ type MarketConfig struct {
 	MinQuantity      decimal.Decimal
 	MaxQuantity      decimal.Decimal
 	QuantityStepSize decimal.Decimal
+	TickerSvc        types.TickerSvc
 }
 
 func New(c MarketConfig) types.Market {
 	mkt := &market{
-		name: c.Name, baseCurrency: c.BaseCurrency, quoteCurrency: c.QuoteCurrency,
-		minPrice: c.MinPrice, maxPrice: c.MaxPrice, priceIncrement: c.PriceIncrement,
-		minQuantity: c.MinQuantity, maxQuantity: c.MaxQuantity, quantityStepSize: c.QuantityStepSize,
+		name:             c.Name,
+		baseCurrency:     c.BaseCurrency,
+		quoteCurrency:    c.QuoteCurrency,
+		minPrice:         c.MinPrice,
+		maxPrice:         c.MaxPrice,
+		priceIncrement:   c.PriceIncrement,
+		minQuantity:      c.MinQuantity,
+		maxQuantity:      c.MaxQuantity,
+		quantityStepSize: c.QuantityStepSize,
+		tickerSvc:        c.TickerSvc,
 	}
 
 	return mkt
@@ -76,8 +85,12 @@ func (m *market) QuantityStepSize() decimal.Decimal {
 	return m.quantityStepSize
 }
 
+func (m *market) Ticker() (types.Ticker, error) {
+	return m.tickerSvc.Ticker(m)
+}
+
 func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
-	return nil
+	return m.tickerSvc.TickerStream(stop, m)
 }
 
 func (m *market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
