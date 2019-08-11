@@ -108,6 +108,9 @@ type OrderSvc interface {
 	AttemtOrder(req OrderRequest) Order
 	CancelOrder(order Order) error
 	GetOrder(id string) (Order, error)
+}
+
+type Administerable interface {
 	Start()
 	Stop()
 }
@@ -115,27 +118,20 @@ type OrderSvc interface {
 type WalletSvc interface {
 	GetWallet() Wallet
 	GetWallets() []Wallet
-	Start()
-	Stop()
 }
 
 type MarketSvc interface {
 	GetMarket(cur0 Currency, cur1 Currency) (Market, error)
 	GetMarkets() []Market
-	Start()
-	Stop()
 }
 
 type TickerSvc interface {
 	Ticker(market Market) (Ticker, error)
 	TickerStream(stop <-chan bool, market Market) <-chan Ticker
-	Start()
-	Stop()
 }
 
 type Trader interface {
-	Start()
-	Stop()
+	Administerable
 	OrderSvc() OrderSvc
 	WalletSvc() WalletSvc
 	MarketSvc() MarketSvc

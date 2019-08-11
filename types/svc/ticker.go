@@ -13,6 +13,11 @@ type Ticker struct {
 	stop     chan bool
 }
 
+type InternalTickerSvc interface {
+	types.TickerSvc
+	types.Administerable
+}
+
 type streamWrapper struct {
 	market types.Market
 	stream chan types.Ticker
@@ -25,7 +30,7 @@ type sourceWrapper struct {
 	stop   chan bool
 }
 
-func NewTicker(provider types.Provider) types.TickerSvc {
+func NewTicker(provider types.Provider) InternalTickerSvc {
 	svc := &Ticker{
 		provider: provider,
 		streams:  make(map[types.Market][]*streamWrapper),

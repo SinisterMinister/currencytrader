@@ -17,7 +17,12 @@ type Market struct {
 	provider       types.Provider
 }
 
-func NewMarket(provider types.Provider) types.MarketSvc {
+type InternalMarketSvc interface {
+	types.MarketSvc
+	types.Administerable
+}
+
+func NewMarket(provider types.Provider) InternalMarketSvc {
 	svc := &Market{
 		provider: provider,
 	}

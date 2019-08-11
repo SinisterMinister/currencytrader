@@ -9,8 +9,8 @@ import (
 
 type Trader struct {
 	provider  types.Provider
-	marketSvc types.MarketSvc
-	tickerSvc types.TickerSvc
+	marketSvc svc.InternalMarketSvc
+	tickerSvc svc.InternalTickerSvc
 	walletSvc types.WalletSvc
 	orderSvc  types.OrderSvc
 
