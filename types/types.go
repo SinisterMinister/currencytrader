@@ -1,4 +1,4 @@
-package pkg
+package types
 
 import (
 	"time"
@@ -61,6 +61,8 @@ type Provider interface {
 	GetAllMarkets() ([]Market, error)
 	GetCurrencies() ([]Currency, error)
 	GetWallets(cur Currency) ([]Wallet, error)
+	GetTicker(market Market) (Ticker, error)
+	GetTickerStream(stop <-chan bool, market Market) (<-chan Ticker, error)
 }
 
 // Side represents which side the order will be placed
@@ -116,6 +118,11 @@ type WalletSvc interface {
 type MarketSvc interface {
 	GetMarket(cur0 Currency, cur1 Currency) (Market, error)
 	GetMarkets() []Market
+}
+
+type TickerSvc interface {
+	Ticker(market Market) (Ticker, error)
+	TickerStream(stop <-chan bool, market Market) <-chan Ticker
 }
 
 type Trader interface {

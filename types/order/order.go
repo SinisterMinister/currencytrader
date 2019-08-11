@@ -13,6 +13,6 @@ type Order struct {
 	CreationTime time.Time
 	Filled       decimal.Decimal
 	ID           string
-	Request      pkg.OrderRequest
-	Status       pkg.Status
+	Request      types.OrderRequest
+	Status       types.Status
 }

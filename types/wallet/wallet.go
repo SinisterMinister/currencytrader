@@ -1,8 +1,10 @@
 package wallet
 
 import (
+	"sync"
+
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/pkg/currency"
+	"github.com/sinisterminister/moneytrader/types/currency"
 )
 
 // Wallet TODO
@@ -12,10 +14,10 @@ type Wallet struct {
 	free     decimal.Decimal
 	locked   decimal.Decimal
 	reserved decimal.Decimal
-	mutex sync.Mutex
+	mutex    sync.Mutex
 }
 
-func NewWallet(cur currency.Currency,total decimal.Decimal, free decimal.Decimal,
+func NewWallet(cur currency.Currency, total decimal.Decimal, free decimal.Decimal,
 	locked decimal.Decimal, reserved decimal.Decimal) *Wallet {
 
 	return &Wallet{
@@ -24,7 +26,7 @@ func NewWallet(cur currency.Currency,total decimal.Decimal, free decimal.Decimal
 		free:     free,
 		locked:   locked,
 		reserved: reserved,
-		mutex: sync.Mutex{},
+		mutex:    sync.Mutex{},
 	}
 }
 
@@ -52,5 +54,3 @@ func (w *Wallet) GetLockedBalance() decimal.Decimal {
 func (w *Wallet) GetReservedBalance() decimal.Decimal {
 	return w.reserved
 }
-
-func ()

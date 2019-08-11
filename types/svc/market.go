@@ -5,20 +5,19 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/sinisterminister/moneytrader/types"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/sinisterminister/moneytrader/pkg"
 )
 
 // Market service
 type Market struct {
-	markets        []pkg.Market
+	markets        []types.Market
 	marketsRefresh *time.Timer
-	provider       pkg.Provider
+	provider       types.Provider
 }
 
-func NewMarket(provider pkg.Provider) pkg.MarketSvc {
+func NewMarket(provider types.Provider) types.MarketSvc {
 	svc := &Market{
 		provider: provider,
 	}
@@ -26,7 +25,7 @@ func NewMarket(provider pkg.Provider) pkg.MarketSvc {
 	return svc
 }
 
-func (m *Market) GetMarket(cur0 pkg.Currency, cur1 pkg.Currency) (market pkg.Market, err error) {
+func (m *Market) GetMarket(cur0 types.Currency, cur1 types.Currency) (market types.Market, err error) {
 	for _, mkt := range m.markets {
 		if cmp.Equal(mkt.BaseCurrency, cur0) && cmp.Equal(mkt.QuoteCurrency, cur1) {
 			market = mkt
@@ -39,10 +38,10 @@ func (m *Market) GetMarket(cur0 pkg.Currency, cur1 pkg.Currency) (market pkg.Mar
 		}
 	}
 
-	return market, fmt.Errorf("Could not find market for currencies '%s', '%s'", cur0.Name, cur1.Name)
+	return market, fmt.Errorf("Could not find market for currencies '%s', '%s'", cur0.Name(), cur1.Name())
 }
 
-func (m *Market) GetMarkets() []pkg.Market {
+func (m *Market) GetMarkets() []types.Market {
 	return m.markets[:0]
 }
 

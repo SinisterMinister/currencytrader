@@ -7,7 +7,7 @@ import (
 
 // Request represents an order to be placed by the provider
 type Request struct {
-	Side     pkg.Side
+	Side     types.Side
 	Quantity decimal.Decimal
 	Price    decimal.Decimal
 }

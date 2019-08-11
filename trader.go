@@ -1,20 +1,41 @@
 package trader
 
 import (
-	"github.com/sinisterminister/moneytrader/pkg"
-	"github.com/sinisterminister/moneytrader/pkg/market"
-	"github.com/sinisterminister/moneytrader/pkg/wallet"
+	"github.com/sinisterminister/moneytrader/types"
+	"github.com/sinisterminister/moneytrader/types/svc"
 )
 
 type Trader struct {
-	provider pkg.Provider
-	markets  []market.Market
-	wallets  []*wallet.Wallet
+	provider  types.Provider
+	marketSvc types.MarketSvc
+	tickerSvc types.TickerSvc
 }
 
-func New(provider pkg.Provider) (t *Trader) {
+func New(provider types.Provider) (t types.Trader) {
 	t = &Trader{
-		provider: provider,
+		provider:  provider,
+		marketSvc: svc.NewMarket(provider),
+		tickerSvc: svc.NewTicker(provider),
 	}
 	return t
+}
+
+func (t *Trader) Launch(stop <-chan bool) {
+
+}
+
+func (t *Trader) OrderSvc() types.OrderSvc {
+	return nil
+}
+
+func (t *Trader) WalletSvc() types.WalletSvc {
+	return nil
+}
+
+func (t *Trader) MarketSvc() types.MarketSvc {
+	return t.marketSvc
+}
+
+func (t *Trader) TickerSvc() types.TickerSvc {
+	return t.tickerSvc
 }

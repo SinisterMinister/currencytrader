@@ -8,8 +8,8 @@ import (
 // Market is where you can trade one currency for another.
 type Market struct {
 	name             string
-	baseCurrency     pkg.Currency
-	quoteCurrency    pkg.Currency
+	baseCurrency     types.Currency
+	quoteCurrency    types.Currency
 	minPrice         decimal.Decimal
 	maxPrice         decimal.Decimal
 	priceIncrement   decimal.Decimal
@@ -18,9 +18,9 @@ type Market struct {
 	quantityStepSize decimal.Decimal
 }
 
-func New(name string, baseCur pkg.Currency, quoteCur pkg.Currency,
+func New(name string, baseCur types.Currency, quoteCur types.Currency,
 	minPrice decimal.Decimal, maxPrice decimal.Decimal, priceIncr decimal.Decimal,
-	minQty decimal.Decimal, maxQty decimal.Decimal, stepsize decimal.Decimal) pkg.Market {
+	minQty decimal.Decimal, maxQty decimal.Decimal, stepsize decimal.Decimal) types.Market {
 	market := &Market{
 		name: name, baseCurrency: baseCur, quoteCurrency: quoteCur,
 		minPrice: minPrice, maxPrice: maxPrice, priceIncrement: priceIncr,
@@ -34,11 +34,11 @@ func (m *Market) Name() string {
 	return m.name
 }
 
-func (m *Market) BaseCurrency() pkg.Currency {
+func (m *Market) BaseCurrency() types.Currency {
 	return m.baseCurrency
 }
 
-func (m *Market) QuoteCurrency() pkg.Currency {
+func (m *Market) QuoteCurrency() types.Currency {
 	return m.quoteCurrency
 }
 
@@ -66,10 +66,10 @@ func (m *Market) QuantityStepSize() decimal.Decimal {
 	return m.quantityStepSize
 }
 
-func (m *Market) TickerStream(stop <-chan bool) <-chan pkg.Ticker {
+func (m *Market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return nil
 }
 
-func (m *Market) CandlestickStream(stop <-chan bool, interval string) <-chan pkg.Candlestick {
+func (m *Market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
 	return nil
 }
