@@ -48,7 +48,10 @@ func main() {
 }
 
 func streamTicker(stop <-chan bool, market types.Market) {
+	// Get the ticker stream from the market
 	stream := market.TickerStream(stop)
+
+	// Watch the stream and log any data sent over it
 	for {
 		// Bail out on stop
 		select {
@@ -61,6 +64,8 @@ func streamTicker(stop <-chan bool, market types.Market) {
 		//Backup bailout
 		case <-stop:
 			return
+
+		// Data received
 		case data := <-stream:
 			logrus.WithField("data", data).Infof("stream data recieved for %s market", market.Name())
 		}
