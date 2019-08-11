@@ -12,15 +12,19 @@ type Wallet struct {
 	free     decimal.Decimal
 	locked   decimal.Decimal
 	reserved decimal.Decimal
+	mutex sync.Mutex
 }
 
-func NewWallet(cur currency.Currency, total decimal.Decimal, free decimal.Decimal, locked decimal.Decimal, reserved decimal.Decimal) *Wallet {
+func NewWallet(cur currency.Currency,total decimal.Decimal, free decimal.Decimal,
+	locked decimal.Decimal, reserved decimal.Decimal) *Wallet {
+
 	return &Wallet{
 		currency: cur,
 		total:    total,
 		free:     free,
 		locked:   locked,
 		reserved: reserved,
+		mutex: sync.Mutex{},
 	}
 }
 
@@ -48,3 +52,5 @@ func (w *Wallet) GetLockedBalance() decimal.Decimal {
 func (w *Wallet) GetReservedBalance() decimal.Decimal {
 	return w.reserved
 }
+
+func ()

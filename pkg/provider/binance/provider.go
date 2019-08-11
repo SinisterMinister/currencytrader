@@ -1,14 +1,9 @@
 package binance
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/shopspring/decimal"
 
 	"github.com/sinisterminister/moneytrader/pkg/wallet"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/sinisterminister/moneytrader/pkg/currency"
 	"github.com/sinisterminister/moneytrader/pkg/market"
@@ -16,11 +11,6 @@ import (
 )
 
 type Provider struct {
-	currencies        map[string]currency.Currency
-	currenciesRefresh *time.Timer
-	markets           []market.Market
-	marketsRefresh    *time.Timer
-
 	stopChan <-chan bool
 }
 
@@ -28,95 +18,25 @@ func newProvider(stopChan <-chan bool) *Provider {
 	p := &Provider{
 		stopChan: stopChan,
 	}
-	p.updateCurrencies()
-	p.updateMarkets()
 
 	return p
 }
 
 func (p *Provider) GetMarkets() (markets []market.Market, err error) {
-	// Update markets if necessary
-	p.updateMarkets()
-	markets = p.markets
-
-	return markets, err
-}
-
-func (p *Provider) GetMarket(currency0 currency.Currency, currency1 currency.Currency) (mkt market.Market, err error) {
-	markets, _ := p.GetMarkets()
-
-	for _, m := range markets {
-		if cmp.Equal(mkt.BaseCurrency, currency0) && cmp.Equal(mkt.QuoteCurrency, currency1) {
-			mkt = m
-			return
-		}
-		if cmp.Equal(mkt.BaseCurrency, currency1) && cmp.Equal(mkt.QuoteCurrency, currency0) {
-			mkt = m
-			return
-		}
-	}
-
-	return mkt, fmt.Errorf("no market for currencies %s, %s", currency0.Name, currency1.Name)
-}
-
-func (p *Provider) GetCurrency(symbol string) (cur currency.Currency, err error) {
-	// First, update currencies if necessary
-	p.updateCurrencies()
-
-	// Get the currency from the cache
-	cur, ok := p.currencies[symbol]
-	if !ok {
-		return cur, fmt.Errorf("currency %s not found", symbol)
-	}
-	return cur, err
-}
-
-func (p *Provider) GetCurrencies() (currencies []currency.Currency, err error) {
-	// First, update currencies if necessary
-	p.updateCurrencies()
-	currencies = make([]currency.Currency, len(p.currencies))
-
-	for _, cur := range p.currencies {
-		currencies = append(currencies, cur)
-	}
-
-	return
-}
-
-func (p *Provider) GetWallets() (wallets []*wallet.Wallet, err error) {
-	data, err := api.GetUserData()
-	if err != nil {
-		return
-	}
-
-	wallets = []*wallet.Wallet{}
-	for _, bal := range data.Balances {
-		cur, _ := p.GetCurrency(bal.Asset)
-		w := wallet.NewWallet(cur, bal.Free.Add(bal.Locked), bal.Free, bal.Locked, decimal.Zero)
-
-		wallets = append(wallets, w)
-	}
-
-	return wallets, err
-}
-
-func (p *Provider) updateMarkets() {
-	if p.marketsRefresh != nil {
-		select {
-		default:
-			// Nothing to do
-			return
-		case <-p.marketsRefresh.C:
-			// Time to update, continue below
-		}
-	}
-
-	markets := []market.Market{}
+	markets = []market.Market{}
 	symbols := api.GetExchangeInfo().Symbols
 
 	for _, symbol := range symbols {
-		baseCur, _ := p.GetCurrency(symbol.BaseAsset)
-		quoteCur, _ := p.GetCurrency(symbol.QuoteAsset)
+		baseCur := currency.Currency{
+			Name:      symbol.BaseAsset,
+			Symbol:    symbol.BaseAsset,
+			Precision: symbol.BasePrecision,
+		}
+		quoteCur := currency.Currency{
+			Name:      symbol.QuoteAsset,
+			Symbol:    symbol.QuoteAsset,
+			Precision: symbol.QuotePrecision,
+		}
 
 		m := market.Market{
 			Name:             symbol.Symbol,
@@ -133,23 +53,13 @@ func (p *Provider) updateMarkets() {
 		markets = append(markets, m)
 	}
 
-	p.markets = markets
-	p.marketsRefresh = time.NewTimer(1 * time.Minute)
+	return markets, err
 }
 
-func (p *Provider) updateCurrencies() {
-	if p.currenciesRefresh != nil {
-		select {
-		default:
-			// Nothing to do
-			return
-		case <-p.currenciesRefresh.C:
-			// Time to update, continue below
-		}
-	}
-
+func (p *Provider) GetCurrencies() (currencies map[string]currency.Currency, err error) {
+	// First, update currencies if necessary
 	symbols := api.GetExchangeInfo().Symbols
-	currencies := make(map[string]currency.Currency)
+	currencies = make(map[string]currency.Currency)
 
 	for _, symbol := range symbols {
 		if _, ok := currencies[symbol.BaseAsset]; !ok {
@@ -169,6 +79,23 @@ func (p *Provider) updateCurrencies() {
 		}
 	}
 
-	p.currencies = currencies
-	p.currenciesRefresh = time.NewTimer(1 * time.Minute)
+	return currencies, err
+}
+
+func (p *Provider) GetWallets() (wallets []*wallet.Wallet, err error) {
+	data, err := api.GetUserData()
+	if err != nil {
+		return
+	}
+
+	wallets = []*wallet.Wallet{}
+	currencies, _ := p.GetCurrencies()
+	for _, bal := range data.Balances {
+		cur, _ := currencies[bal.Asset]
+		w := wallet.NewWallet(cur, bal.Free.Add(bal.Locked), bal.Free, bal.Locked, decimal.Zero)
+
+		wallets = append(wallets, w)
+	}
+
+	return wallets, err
 }
