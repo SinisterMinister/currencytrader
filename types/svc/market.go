@@ -56,10 +56,18 @@ func (m *Market) updateMarkets() {
 		}
 	}
 
-	markets, err := m.provider.GetAllMarkets()
+	markets, err := m.provider.GetMarkets()
 	if err != nil {
 		logrus.WithError(err).Error("Could not get markets from provider!")
 	}
 
 	m.markets = markets
+}
+
+func (m *Market) Start() {
+
+}
+
+func (m *Market) Stop() {
+
 }

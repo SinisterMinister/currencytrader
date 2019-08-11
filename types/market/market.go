@@ -2,11 +2,11 @@ package market
 
 import (
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/pkg"
+	"github.com/sinisterminister/moneytrader/types"
 )
 
-// Market is where you can trade one currency for another.
-type Market struct {
+// market is where you can trade one currency for another.
+type market struct {
 	name             string
 	baseCurrency     types.Currency
 	quoteCurrency    types.Currency
@@ -18,58 +18,68 @@ type Market struct {
 	quantityStepSize decimal.Decimal
 }
 
-func New(name string, baseCur types.Currency, quoteCur types.Currency,
-	minPrice decimal.Decimal, maxPrice decimal.Decimal, priceIncr decimal.Decimal,
-	minQty decimal.Decimal, maxQty decimal.Decimal, stepsize decimal.Decimal) types.Market {
-	market := &Market{
-		name: name, baseCurrency: baseCur, quoteCurrency: quoteCur,
-		minPrice: minPrice, maxPrice: maxPrice, priceIncrement: priceIncr,
-		minQuantity: minQty, maxQuantity: maxQty, quantityStepSize: stepsize,
-	}
-
-	return market
+type MarketConfig struct {
+	Name             string
+	BaseCurrency     types.Currency
+	QuoteCurrency    types.Currency
+	MinPrice         decimal.Decimal
+	MaxPrice         decimal.Decimal
+	PriceIncrement   decimal.Decimal
+	MinQuantity      decimal.Decimal
+	MaxQuantity      decimal.Decimal
+	QuantityStepSize decimal.Decimal
 }
 
-func (m *Market) Name() string {
+func New(c MarketConfig) types.Market {
+	mkt := &market{
+		name: c.Name, baseCurrency: c.BaseCurrency, quoteCurrency: c.QuoteCurrency,
+		minPrice: c.MinPrice, maxPrice: c.MaxPrice, priceIncrement: c.PriceIncrement,
+		minQuantity: c.MinQuantity, maxQuantity: c.MaxQuantity, quantityStepSize: c.QuantityStepSize,
+	}
+
+	return mkt
+}
+
+func (m *market) Name() string {
 	return m.name
 }
 
-func (m *Market) BaseCurrency() types.Currency {
+func (m *market) BaseCurrency() types.Currency {
 	return m.baseCurrency
 }
 
-func (m *Market) QuoteCurrency() types.Currency {
+func (m *market) QuoteCurrency() types.Currency {
 	return m.quoteCurrency
 }
 
-func (m *Market) MinPrice() decimal.Decimal {
+func (m *market) MinPrice() decimal.Decimal {
 	return m.minPrice
 }
 
-func (m *Market) MaxPrice() decimal.Decimal {
+func (m *market) MaxPrice() decimal.Decimal {
 	return m.maxPrice
 }
 
-func (m *Market) PriceIncrement() decimal.Decimal {
+func (m *market) PriceIncrement() decimal.Decimal {
 	return m.priceIncrement
 }
 
-func (m *Market) MinQuantity() decimal.Decimal {
+func (m *market) MinQuantity() decimal.Decimal {
 	return m.minQuantity
 }
 
-func (m *Market) MaxQuantity() decimal.Decimal {
+func (m *market) MaxQuantity() decimal.Decimal {
 	return m.maxQuantity
 }
 
-func (m *Market) QuantityStepSize() decimal.Decimal {
+func (m *market) QuantityStepSize() decimal.Decimal {
 	return m.quantityStepSize
 }
 
-func (m *Market) TickerStream(stop <-chan bool) <-chan types.Ticker {
+func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return nil
 }
 
-func (m *Market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
+func (m *market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
 	return nil
 }

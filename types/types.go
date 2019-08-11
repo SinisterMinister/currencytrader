@@ -58,9 +58,9 @@ type Wallet interface {
 }
 
 type Provider interface {
-	GetAllMarkets() ([]Market, error)
+	GetMarkets() ([]Market, error)
 	GetCurrencies() ([]Currency, error)
-	GetWallets(cur Currency) ([]Wallet, error)
+	GetWallets() ([]Wallet, error)
 	GetTicker(market Market) (Ticker, error)
 	GetTickerStream(stop <-chan bool, market Market) (<-chan Ticker, error)
 }
@@ -108,25 +108,36 @@ type OrderSvc interface {
 	AttemtOrder(req OrderRequest) Order
 	CancelOrder(order Order) error
 	GetOrder(id string) (Order, error)
+	Start()
+	Stop()
 }
 
 type WalletSvc interface {
 	GetWallet() Wallet
 	GetWallets() []Wallet
+	Start()
+	Stop()
 }
 
 type MarketSvc interface {
 	GetMarket(cur0 Currency, cur1 Currency) (Market, error)
 	GetMarkets() []Market
+	Start()
+	Stop()
 }
 
 type TickerSvc interface {
 	Ticker(market Market) (Ticker, error)
 	TickerStream(stop <-chan bool, market Market) <-chan Ticker
+	Start()
+	Stop()
 }
 
 type Trader interface {
-	Launch(shutdown <-chan bool)
+	Start()
+	Stop()
 	OrderSvc() OrderSvc
 	WalletSvc() WalletSvc
+	MarketSvc() MarketSvc
+	TickerSvc() TickerSvc
 }
