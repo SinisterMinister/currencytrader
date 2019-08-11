@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/types"
+	"github.com/sinisterminister/currencytrader/types"
 )
 
 // Ticker TODO

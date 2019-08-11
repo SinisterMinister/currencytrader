@@ -1,6 +1,6 @@
 package simulated
 
-import "github.com/sinisterminister/moneytrader/types"
+import "github.com/sinisterminister/currencytrader/types"
 
 type provider struct {
 }

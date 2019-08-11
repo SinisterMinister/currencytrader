@@ -3,7 +3,7 @@ package order
 import (
 	"time"
 
-	"github.com/sinisterminister/moneytrader/pkg"
+	"github.com/sinisterminister/currencytrader/pkg"
 
 	"github.com/shopspring/decimal"
 )

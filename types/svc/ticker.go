@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"github.com/sinisterminister/moneytrader/types"
+	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sirupsen/logrus"
 )
 

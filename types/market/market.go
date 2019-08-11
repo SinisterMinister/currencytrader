@@ -2,7 +2,7 @@ package market
 
 import (
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/types"
+	"github.com/sinisterminister/currencytrader/types"
 )
 
 // market is where you can trade one currency for another.

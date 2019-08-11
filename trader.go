@@ -1,10 +1,10 @@
-package moneytrader
+package currencytrader
 
 import (
 	"sync"
 
-	"github.com/sinisterminister/moneytrader/types"
-	"github.com/sinisterminister/moneytrader/types/svc"
+	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/svc"
 )
 
 type Trader struct {

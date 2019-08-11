@@ -2,7 +2,7 @@ package order
 
 import (
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/pkg"
+	"github.com/sinisterminister/currencytrader/pkg"
 )
 
 // Request represents an order to be placed by the provider

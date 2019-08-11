@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/shopspring/decimal"
-	"github.com/sinisterminister/moneytrader/types/currency"
+	"github.com/sinisterminister/currencytrader/types/currency"
 )
 
 // Wallet TODO

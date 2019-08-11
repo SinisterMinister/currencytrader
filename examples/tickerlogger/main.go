@@ -4,9 +4,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/sinisterminister/moneytrader"
-	"github.com/sinisterminister/moneytrader/types"
-	"github.com/sinisterminister/moneytrader/types/provider/simulated"
+	"github.com/sinisterminister/currencytrader"
+	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/provider/simulated"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,7 +15,7 @@ func main() {
 	provider := simulated.New(simulated.ProviderConfig{})
 
 	// Get an instance of the trader
-	trader := moneytrader.New(provider)
+	trader := currencytrader.New(provider)
 	trader.Start()
 
 	// Get the available markets

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/sinisterminister/moneytrader/types"
+	"github.com/sinisterminister/currencytrader/types"
 
 	"github.com/sirupsen/logrus"
 )

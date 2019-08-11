@@ -3,11 +3,11 @@ package binance
 import (
 	"github.com/shopspring/decimal"
 
-	"github.com/sinisterminister/moneytrader/pkg/wallet"
+	"github.com/sinisterminister/currencytrader/pkg/wallet"
 
-	"github.com/sinisterminister/moneytrader/pkg/currency"
-	"github.com/sinisterminister/moneytrader/pkg/market"
-	"github.com/sinisterminister/moneytrader/pkg/provider/binance/api"
+	"github.com/sinisterminister/currencytrader/pkg/currency"
+	"github.com/sinisterminister/currencytrader/pkg/market"
+	"github.com/sinisterminister/currencytrader/pkg/provider/binance/api"
 )
 
 type Provider struct {
