@@ -17,15 +17,18 @@ type Ticker struct {
 	volume    decimal.Decimal
 }
 
-func NewTicker(ask decimal.Decimal, bid decimal.Decimal, price decimal.Decimal,
-	quantity decimal.Decimal, timestamp time.Time, volume decimal.Decimal) types.Ticker {
+type TickerConfig struct {
+	types.TickerDTO
+}
+
+func New(config TickerConfig) types.Ticker {
 	return &Ticker{
-		ask:       ask,
-		bid:       bid,
-		price:     price,
-		quantity:  quantity,
-		timestamp: timestamp,
-		volume:    volume,
+		ask:       config.Ask,
+		bid:       config.Bid,
+		price:     config.Price,
+		quantity:  config.Quantity,
+		timestamp: config.Timestamp,
+		volume:    config.Volume,
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/internal"
+	"github.com/sinisterminister/currencytrader/types/market"
 
 	"github.com/sirupsen/logrus"
 )
@@ -14,17 +16,12 @@ import (
 type Market struct {
 	markets        []types.Market
 	marketsRefresh *time.Timer
-	provider       types.Provider
+	trader         internal.Trader
 }
 
-type InternalMarketSvc interface {
-	types.MarketSvc
-	types.Administerable
-}
-
-func NewMarket(provider types.Provider) InternalMarketSvc {
+func NewMarket(trader internal.Trader) internal.MarketSvc {
 	svc := &Market{
-		provider: provider,
+		trader: trader,
 	}
 
 	return svc
@@ -61,9 +58,17 @@ func (m *Market) updateMarkets() {
 		}
 	}
 
-	markets, err := m.provider.GetMarkets()
+	rawMarkets, err := m.trader.Provider().GetMarkets()
 	if err != nil {
 		logrus.WithError(err).Error("Could not get markets from provider!")
+	}
+	markets := make([]types.Market, len(rawMarkets))
+	for _, dto := range rawMarkets {
+		conf := market.MarketConfig{
+			MarketDTO: dto,
+			TickerSvc: m.trader.TickerSvc(),
+		}
+		markets = append(markets, market.New(conf))
 	}
 
 	m.markets = markets

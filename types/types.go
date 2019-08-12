@@ -13,6 +13,12 @@ type Currency interface {
 	Symbol() string
 }
 
+type CurrencyDTO struct {
+	Name      string
+	Precision int
+	Symbol    string
+}
+
 type Market interface {
 	BaseCurrency() Currency
 	CandlestickStream(stop <-chan bool, interval string) <-chan Candlestick
@@ -27,6 +33,18 @@ type Market interface {
 	TickerStream(stop <-chan bool) <-chan Ticker
 }
 
+type MarketDTO struct {
+	Name             string
+	BaseCurrency     Currency
+	QuoteCurrency    Currency
+	MinPrice         decimal.Decimal
+	MaxPrice         decimal.Decimal
+	PriceIncrement   decimal.Decimal
+	MinQuantity      decimal.Decimal
+	MaxQuantity      decimal.Decimal
+	QuantityStepSize decimal.Decimal
+}
+
 type Candlestick interface {
 	Close() decimal.Decimal
 	High() decimal.Decimal
@@ -36,6 +54,15 @@ type Candlestick interface {
 	Volume() decimal.Decimal
 }
 
+type CandlestickDTO struct {
+	Close     decimal.Decimal
+	High      decimal.Decimal
+	Low       decimal.Decimal
+	Open      decimal.Decimal
+	Timestamp time.Time
+	Volume    decimal.Decimal
+}
+
 type Ticker interface {
 	Ask() decimal.Decimal
 	Bid() decimal.Decimal
@@ -43,6 +70,15 @@ type Ticker interface {
 	Quantity() decimal.Decimal
 	Timestamp() time.Time
 	Volume() decimal.Decimal
+}
+
+type TickerDTO struct {
+	Ask       decimal.Decimal
+	Bid       decimal.Decimal
+	Price     decimal.Decimal
+	Quantity  decimal.Decimal
+	Timestamp time.Time
+	Volume    decimal.Decimal
 }
 
 // Wallet TODO
@@ -57,12 +93,13 @@ type Wallet interface {
 	Total() decimal.Decimal
 }
 
-type Provider interface {
-	GetMarkets() ([]Market, error)
-	GetCurrencies() ([]Currency, error)
-	GetWallets() ([]Wallet, error)
-	GetTicker(market Market) (Ticker, error)
-	GetTickerStream(stop <-chan bool, market Market) (<-chan Ticker, error)
+type WalletDTO struct {
+	Available decimal.Decimal
+	Currency  Currency
+	Free      decimal.Decimal
+	Locked    decimal.Decimal
+	Reserved  decimal.Decimal
+	Total     decimal.Decimal
 }
 
 // Side represents which side the order will be placed
@@ -80,6 +117,12 @@ type OrderRequest interface {
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
 	Side() Side
+}
+
+type OrderRequestDTO struct {
+	Price    decimal.Decimal
+	Quantity decimal.Decimal
+	Side     Side
 }
 
 // Status handles the various statuses the Order can be in
@@ -102,6 +145,14 @@ type Order interface {
 	ID() string
 	Request() OrderRequest
 	Status() Status
+}
+
+type OrderDTO struct {
+	CreationTime time.Time
+	Filled       decimal.Decimal
+	ID           string
+	Request      OrderRequest
+	Status       Status
 }
 
 type OrderSvc interface {
@@ -136,4 +187,12 @@ type Trader interface {
 	WalletSvc() WalletSvc
 	MarketSvc() MarketSvc
 	TickerSvc() TickerSvc
+}
+
+type Provider interface {
+	GetMarkets() ([]MarketDTO, error)
+	GetCurrencies() ([]CurrencyDTO, error)
+	GetWallets() ([]WalletDTO, error)
+	GetTicker(market MarketDTO) (TickerDTO, error)
+	GetTickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
 }

@@ -19,17 +19,23 @@ type market struct {
 	tickerSvc        types.TickerSvc
 }
 
+func ToDTO(m types.Market) types.MarketDTO {
+	return types.MarketDTO{
+		Name:             m.Name(),
+		BaseCurrency:     m.BaseCurrency(),
+		QuoteCurrency:    m.QuoteCurrency(),
+		MinPrice:         m.MinPrice(),
+		MaxPrice:         m.MaxPrice(),
+		PriceIncrement:   m.PriceIncrement(),
+		MinQuantity:      m.MinQuantity(),
+		MaxQuantity:      m.MaxQuantity(),
+		QuantityStepSize: m.QuantityStepSize(),
+	}
+}
+
 type MarketConfig struct {
-	Name             string
-	BaseCurrency     types.Currency
-	QuoteCurrency    types.Currency
-	MinPrice         decimal.Decimal
-	MaxPrice         decimal.Decimal
-	PriceIncrement   decimal.Decimal
-	MinQuantity      decimal.Decimal
-	MaxQuantity      decimal.Decimal
-	QuantityStepSize decimal.Decimal
-	TickerSvc        types.TickerSvc
+	types.MarketDTO
+	TickerSvc types.TickerSvc
 }
 
 func New(c MarketConfig) types.Market {

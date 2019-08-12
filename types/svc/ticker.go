@@ -2,20 +2,18 @@ package svc
 
 import (
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/internal"
+	"github.com/sinisterminister/currencytrader/types/market"
+	"github.com/sinisterminister/currencytrader/types/ticker"
 	"github.com/sirupsen/logrus"
 )
 
 type Ticker struct {
-	provider types.Provider
-	streams  map[types.Market][]*streamWrapper
-	sources  map[types.Market]*sourceWrapper
-	running  bool
-	stop     chan bool
-}
-
-type InternalTickerSvc interface {
-	types.TickerSvc
-	types.Administerable
+	trader  internal.Trader
+	streams map[types.Market][]*streamWrapper
+	sources map[types.Market]*sourceWrapper
+	running bool
+	stop    chan bool
 }
 
 type streamWrapper struct {
@@ -26,21 +24,26 @@ type streamWrapper struct {
 
 type sourceWrapper struct {
 	market types.Market
-	stream <-chan types.Ticker
+	stream <-chan types.TickerDTO
 	stop   chan bool
 }
 
-func NewTicker(provider types.Provider) InternalTickerSvc {
+func NewTicker(trader internal.Trader) internal.TickerSvc {
 	svc := &Ticker{
-		provider: provider,
-		streams:  make(map[types.Market][]*streamWrapper),
+		trader:  trader,
+		streams: make(map[types.Market][]*streamWrapper),
 	}
 
 	return svc
 }
 
-func (t *Ticker) Ticker(market types.Market) (types.Ticker, error) {
-	return t.provider.GetTicker(market)
+func (t *Ticker) Ticker(m types.Market) (tkr types.Ticker, err error) {
+	dto, err := t.trader.Provider().GetTicker(market.ToDTO(m))
+	if err != nil {
+		return
+	}
+	tkr = ticker.New(ticker.TickerConfig{dto})
+	return
 }
 
 func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan types.Ticker {
@@ -119,13 +122,13 @@ func (t *Ticker) refreshSources() {
 	}
 }
 
-func (t *Ticker) handleSource(market types.Market) *sourceWrapper {
+func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 	stop := make(chan bool)
-	stream, err := t.provider.GetTickerStream(stop, market)
+	stream, err := t.trader.Provider().GetTickerStream(stop, market.ToDTO(mkt))
 	wrapper := &sourceWrapper{
 		stop:   stop,
 		stream: stream,
-		market: market,
+		market: mkt,
 	}
 	go func(wrapper *sourceWrapper) {
 		if err != nil {
@@ -144,7 +147,8 @@ func (t *Ticker) handleSource(market types.Market) *sourceWrapper {
 			case <-wrapper.stop:
 				// Backup bailout
 				return
-			case data := <-wrapper.stream:
+			case payload := <-wrapper.stream:
+				data := ticker.New(ticker.TickerConfig{TickerDTO: payload})
 				t.broadcastToStreams(wrapper.market, data)
 			}
 		}

@@ -13,22 +13,22 @@ func New(config ProviderConfig) types.Provider {
 	return p
 }
 
-func (p *provider) GetMarkets() (markets []types.Market, err error) {
+func (p *provider) GetMarkets() (markets []types.MarketDTO, err error) {
 	return
 }
 
-func (p *provider) GetCurrencies() (currencies []types.Currency, err error) {
+func (p *provider) GetCurrencies() (currencies []types.CurrencyDTO, err error) {
 	return
 }
 
-func (p *provider) GetTicker(market types.Market) (ticker types.Ticker, err error) {
+func (p *provider) GetTicker(market types.MarketDTO) (ticker types.TickerDTO, err error) {
 	return
 }
 
-func (p *provider) GetTickerStream(stop <-chan bool, market types.Market) (dataChan <-chan types.Ticker, err error) {
+func (p *provider) GetTickerStream(stop <-chan bool, market types.MarketDTO) (dataChan <-chan types.TickerDTO, err error) {
 	return
 }
 
-func (p *provider) GetWallets() (wallets []types.Wallet, err error) {
+func (p *provider) GetWallets() (wallets []types.WalletDTO, err error) {
 	return
 }
