@@ -1,6 +1,8 @@
 package svc
 
 import (
+	"sync"
+
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/market"
@@ -9,11 +11,12 @@ import (
 )
 
 type Ticker struct {
-	trader  internal.Trader
+	trader internal.Trader
+
+	mutex   sync.RWMutex
 	streams map[types.Market][]*streamWrapper
 	sources map[types.Market]*sourceWrapper
 	running bool
-	stop    chan bool
 }
 
 type streamWrapper struct {
@@ -61,10 +64,18 @@ func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan type
 			t.deregisterStream(wrapper)
 		}
 	}()
+
+	t.mutex.RLock()
+	if t.running {
+		defer t.refreshSources()
+	}
+	t.mutex.RUnlock()
 	return stream
 }
 
 func (t *Ticker) registerStream(wrapper *streamWrapper) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	// Create slice if not already exist
 	streams, ok := t.streams[wrapper.market]
 	if !ok {
@@ -77,6 +88,8 @@ func (t *Ticker) registerStream(wrapper *streamWrapper) {
 }
 
 func (t *Ticker) deregisterStream(wrapper *streamWrapper) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	// Bail out if there's no channels there already
 	if _, ok := t.streams[wrapper.market]; !ok {
 		return
@@ -105,6 +118,8 @@ func (t *Ticker) deregisterStream(wrapper *streamWrapper) {
 }
 
 func (t *Ticker) refreshSources() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 	// Create any missing streams
 	for market := range t.streams {
 		if _, ok := t.sources[market]; !ok {
@@ -177,13 +192,15 @@ func (t *Ticker) shutdownStreams() {
 }
 
 func (t *Ticker) Start() {
+	t.mutex.Lock()
 	t.running = true
-	t.stop = make(chan bool)
+	t.mutex.Unlock()
 	t.refreshSources()
 }
 
 func (t *Ticker) Stop() {
-	close(t.stop)
-	t.shutdownStreams()
+	t.mutex.Lock()
 	t.running = false
+	t.mutex.Unlock()
+	t.shutdownStreams()
 }

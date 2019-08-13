@@ -35,8 +35,8 @@ type Market interface {
 
 type MarketDTO struct {
 	Name             string
-	BaseCurrency     Currency
-	QuoteCurrency    Currency
+	BaseCurrency     CurrencyDTO
+	QuoteCurrency    CurrencyDTO
 	MinPrice         decimal.Decimal
 	MaxPrice         decimal.Decimal
 	PriceIncrement   decimal.Decimal
@@ -95,7 +95,7 @@ type Wallet interface {
 
 type WalletDTO struct {
 	Available decimal.Decimal
-	Currency  Currency
+	Currency  CurrencyDTO
 	Free      decimal.Decimal
 	Locked    decimal.Decimal
 	Reserved  decimal.Decimal

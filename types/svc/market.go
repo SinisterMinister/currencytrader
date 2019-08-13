@@ -2,6 +2,7 @@ package svc
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,9 +15,11 @@ import (
 
 // Market service
 type Market struct {
-	markets        []types.Market
+	trader internal.Trader
+
+	mutex          sync.RWMutex
 	marketsRefresh *time.Timer
-	trader         internal.Trader
+	markets        []types.Market
 }
 
 func NewMarket(trader internal.Trader) internal.MarketSvc {
@@ -28,6 +31,8 @@ func NewMarket(trader internal.Trader) internal.MarketSvc {
 }
 
 func (m *Market) GetMarket(cur0 types.Currency, cur1 types.Currency) (market types.Market, err error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
 	for _, mkt := range m.markets {
 		if cmp.Equal(mkt.BaseCurrency, cur0) && cmp.Equal(mkt.QuoteCurrency, cur1) {
 			market = mkt
@@ -44,7 +49,10 @@ func (m *Market) GetMarket(cur0 types.Currency, cur1 types.Currency) (market typ
 }
 
 func (m *Market) GetMarkets() []types.Market {
-	return m.markets[:0]
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.updateMarkets()
+	return m.markets
 }
 
 func (m *Market) updateMarkets() {
@@ -62,20 +70,20 @@ func (m *Market) updateMarkets() {
 	if err != nil {
 		logrus.WithError(err).Error("Could not get markets from provider!")
 	}
-	markets := make([]types.Market, len(rawMarkets))
+	markets := []types.Market{}
 	for _, dto := range rawMarkets {
 		conf := market.MarketConfig{
 			MarketDTO: dto,
 			TickerSvc: m.trader.TickerSvc(),
 		}
-		markets = append(markets, market.New(conf))
+		mkt := market.New(conf)
+		markets = append(markets, mkt)
 	}
 
 	m.markets = markets
 }
 
 func (m *Market) Start() {
-
 }
 
 func (m *Market) Stop() {

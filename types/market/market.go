@@ -3,6 +3,7 @@ package market
 import (
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/currency"
 )
 
 // market is where you can trade one currency for another.
@@ -16,14 +17,15 @@ type market struct {
 	minQuantity      decimal.Decimal
 	maxQuantity      decimal.Decimal
 	quantityStepSize decimal.Decimal
-	tickerSvc        types.TickerSvc
+
+	tickerSvc types.TickerSvc
 }
 
 func ToDTO(m types.Market) types.MarketDTO {
 	return types.MarketDTO{
 		Name:             m.Name(),
-		BaseCurrency:     m.BaseCurrency(),
-		QuoteCurrency:    m.QuoteCurrency(),
+		BaseCurrency:     currency.ToDTO(m.BaseCurrency()),
+		QuoteCurrency:    currency.ToDTO(m.QuoteCurrency()),
 		MinPrice:         m.MinPrice(),
 		MaxPrice:         m.MaxPrice(),
 		PriceIncrement:   m.PriceIncrement(),
@@ -41,8 +43,8 @@ type MarketConfig struct {
 func New(c MarketConfig) types.Market {
 	mkt := &market{
 		name:             c.Name,
-		baseCurrency:     c.BaseCurrency,
-		quoteCurrency:    c.QuoteCurrency,
+		baseCurrency:     currency.New(c.BaseCurrency),
+		quoteCurrency:    currency.New(c.QuoteCurrency),
 		minPrice:         c.MinPrice,
 		maxPrice:         c.MaxPrice,
 		priceIncrement:   c.PriceIncrement,
