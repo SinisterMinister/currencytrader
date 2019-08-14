@@ -2,7 +2,6 @@ package trader
 
 import (
 	"sync"
-	"time"
 
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
@@ -36,7 +35,6 @@ func (t *Trader) Start() {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	t.startServices()
-	time.Sleep(5 * time.Second)
 }
 
 func (t *Trader) Stop() {

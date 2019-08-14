@@ -74,7 +74,7 @@ func getTicker(mkt types.MarketDTO) types.TickerDTO {
 func getTickerStream(stop <-chan bool, mkt types.MarketDTO) <-chan types.TickerDTO {
 	ch := make(chan types.TickerDTO)
 
-	func(ch chan types.TickerDTO) {
+	go func(ch chan types.TickerDTO) {
 		ticker := time.NewTicker(1 * time.Second)
 
 		for {

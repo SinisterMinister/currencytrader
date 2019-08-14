@@ -35,6 +35,7 @@ func NewTicker(trader internal.Trader) internal.TickerSvc {
 	svc := &Ticker{
 		trader:  trader,
 		streams: make(map[types.Market][]*streamWrapper),
+		sources: make(map[types.Market]*sourceWrapper),
 	}
 
 	return svc
@@ -66,10 +67,12 @@ func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan type
 	}()
 
 	t.mutex.RLock()
-	if t.running {
-		defer t.refreshSources()
-	}
+	r := t.running
 	t.mutex.RUnlock()
+	if r {
+		go t.refreshSources()
+	}
+
 	return stream
 }
 
