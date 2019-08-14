@@ -48,7 +48,7 @@ func getMarkets() []types.MarketDTO {
 
 	for _, base := range currencies {
 		for _, quote := range currencies {
-			if !contains(markets, base.Symbol+quote.Symbol) && !contains(markets, quote.Symbol+base.Symbol) {
+			if !contains(markets, base.Symbol+quote.Symbol) && !contains(markets, quote.Symbol+base.Symbol) && base.Symbol != quote.Symbol {
 				markets = append(markets, types.MarketDTO{
 					Name:          base.Symbol + quote.Symbol,
 					BaseCurrency:  base,

@@ -179,7 +179,11 @@ func (t *Ticker) broadcastToStreams(market types.Market, data types.Ticker) {
 		return
 	}
 	for _, wrapper := range streams {
-		wrapper.stream <- data
+		select {
+		case wrapper.stream <- data:
+		default:
+			logrus.Warn("Skipping blocked ticker channel")
+		}
 	}
 }
 
