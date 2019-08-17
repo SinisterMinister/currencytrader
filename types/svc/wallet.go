@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/sinisterminister/currencytrader/types/currency"
 	wal "github.com/sinisterminister/currencytrader/types/wallet"
 
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type wallet struct {
 	stop    chan bool
 }
 
-func WalletSvc(trader internal.Trader) internal.WalletSvc {
+func NewWallet(trader internal.Trader) internal.WalletSvc {
 	return &wallet{
 		trader: trader,
 	}
@@ -74,13 +75,15 @@ func (w *wallet) startWalletStreams() {
 	streams := make(map[internal.Wallet]<-chan types.WalletDTO)
 	for _, dto := range wallets {
 		wallet := wal.New(dto)
-		ch, err := w.trader.Provider().GetWalletStream(w.stop, wallet.Currency())
+		ch, err := w.trader.Provider().GetWalletStream(w.stop, currency.ToDTO(wallet.Currency()))
 
 		if err != nil {
 			logrus.WithError(err).Panicf("could not get update stream for wallet %s", wallet.Currency().Name)
 		}
 		streams[wallet] = ch
 	}
+
+	w.streams = streams
 
 	for wallet, stream := range streams {
 		go func(stop <-chan bool, wallet internal.Wallet, stream <-chan types.WalletDTO) {

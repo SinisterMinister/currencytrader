@@ -191,8 +191,8 @@ type Provider interface {
 	GetMarkets() ([]MarketDTO, error)
 	GetCurrencies() ([]CurrencyDTO, error)
 	GetWallets() ([]WalletDTO, error)
-	GetWallet(currency Currency) (WalletDTO, error)
-	GetWalletStream(stop <-chan bool, currency Currency) (<-chan WalletDTO, error)
+	GetWallet(currency CurrencyDTO) (WalletDTO, error)
+	GetWalletStream(stop <-chan bool, currency CurrencyDTO) (<-chan WalletDTO, error)
 	GetTicker(market MarketDTO) (TickerDTO, error)
 	GetTickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
 }

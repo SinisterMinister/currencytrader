@@ -29,6 +29,15 @@ func New(dto types.WalletDTO) internal.Wallet {
 	}
 }
 
+func ToDTO(wallet types.Wallet) types.WalletDTO {
+	return types.WalletDTO{
+		Currency: currency.ToDTO(wallet.Currency()),
+		Free:     wallet.Free(),
+		Locked:   wallet.Locked(),
+		Reserved: wallet.Reserved(),
+	}
+}
+
 func (w *wallet) Currency() types.Currency {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()

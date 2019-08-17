@@ -34,5 +34,16 @@ func (p *provider) GetTickerStream(stop <-chan bool, market types.MarketDTO) (da
 }
 
 func (p *provider) GetWallets() (wallets []types.WalletDTO, err error) {
+	wallets = getWallets()
+	return
+}
+
+func (p *provider) GetWallet(currency types.CurrencyDTO) (wallet types.WalletDTO, err error) {
+	wallet = getWallet(currency)
+	return
+}
+
+func (p *provider) GetWalletStream(stop <-chan bool, currency types.CurrencyDTO) (stream <-chan types.WalletDTO, err error) {
+	stream = getWalletStream(stop, currency)
 	return
 }

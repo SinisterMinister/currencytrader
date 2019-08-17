@@ -28,7 +28,7 @@ func New(provider types.Provider) internal.Trader {
 
 	t.marketSvc = svc.NewMarket(t)
 	t.tickerSvc = svc.NewTicker(t)
-	t.walletSvc = svc.(provider)
+	t.walletSvc = svc.NewWallet(t)
 	return t
 }
 
@@ -47,7 +47,6 @@ func (t *trader) Stop() {
 func (t *trader) startServices() {
 	if !t.running {
 		t.tickerSvc.Start()
-		t.marketSvc.Start()
 		t.walletSvc.Start()
 
 		t.running = true
@@ -57,7 +56,7 @@ func (t *trader) startServices() {
 func (t *trader) stopServices() {
 	if t.running {
 		t.tickerSvc.Stop()
-		t.marketSvc.Stop()
+		t.walletSvc.Start()
 
 		t.running = false
 	}

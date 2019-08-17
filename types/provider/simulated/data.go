@@ -98,3 +98,48 @@ func getTickerStream(stop <-chan bool, mkt types.MarketDTO) <-chan types.TickerD
 
 	return ch
 }
+
+func getWallets() []types.WalletDTO {
+	currencies := getCurrencies()
+	wallets := []types.WalletDTO{}
+	for _, cur := range currencies {
+		wallets = append(wallets,
+			types.WalletDTO{
+				Currency: cur,
+				Free:     decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
+				Locked:   decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
+			},
+		)
+	}
+	return wallets
+}
+
+func getWallet(cur types.CurrencyDTO) types.WalletDTO {
+	return types.WalletDTO{
+		Currency: cur,
+		Free:     decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
+		Locked:   decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
+	}
+}
+
+func getWalletStream(stop <-chan bool, cur types.CurrencyDTO) <-chan types.WalletDTO {
+	ch := make(chan types.WalletDTO)
+	go func(stop <-chan bool, cur types.CurrencyDTO, ch chan types.WalletDTO) {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+				ch <- getWallet(cur)
+			}
+		}
+	}(stop, cur, ch)
+	return ch
+}
