@@ -92,7 +92,7 @@ func (w *wallet) UpdateWallet(dto types.WalletDTO) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	// Skip reserved 
+	// Skip reserved
 	w.free = dto.Free
 	w.locked = dto.Locked
 }
