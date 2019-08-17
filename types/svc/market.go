@@ -70,7 +70,7 @@ func (m *Market) updateMarkets() {
 	if err != nil {
 		logrus.WithError(err).Error("Could not get markets from provider!")
 	}
-	markets := []types.Market{}
+	markets := make([]types.Market, 0, len(rawMarkets))
 	for _, dto := range rawMarkets {
 		conf := market.MarketConfig{
 			MarketDTO: dto,
@@ -81,11 +81,4 @@ func (m *Market) updateMarkets() {
 	}
 
 	m.markets = markets
-}
-
-func (m *Market) Start() {
-}
-
-func (m *Market) Stop() {
-
 }

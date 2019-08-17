@@ -87,19 +87,17 @@ type Wallet interface {
 	Currency() Currency
 	Free() decimal.Decimal
 	Locked() decimal.Decimal
-	Release(amt decimal.Decimal)
-	Reserve(amt decimal.Decimal)
+	Release(amt decimal.Decimal) error
+	Reserve(amt decimal.Decimal) error
 	Reserved() decimal.Decimal
 	Total() decimal.Decimal
 }
 
 type WalletDTO struct {
-	Available decimal.Decimal
-	Currency  CurrencyDTO
-	Free      decimal.Decimal
-	Locked    decimal.Decimal
-	Reserved  decimal.Decimal
-	Total     decimal.Decimal
+	Currency CurrencyDTO
+	Free     decimal.Decimal
+	Locked   decimal.Decimal
+	Reserved decimal.Decimal
 }
 
 // Side represents which side the order will be placed
@@ -167,7 +165,7 @@ type Administerable interface {
 }
 
 type WalletSvc interface {
-	GetWallet() Wallet
+	GetWallet(currency Currency) (Wallet, error)
 	GetWallets() []Wallet
 }
 
@@ -193,6 +191,8 @@ type Provider interface {
 	GetMarkets() ([]MarketDTO, error)
 	GetCurrencies() ([]CurrencyDTO, error)
 	GetWallets() ([]WalletDTO, error)
+	GetWallet(currency Currency) (WalletDTO, error)
+	GetWalletStream(stop <-chan bool, currency Currency) (<-chan WalletDTO, error)
 	GetTicker(market MarketDTO) (TickerDTO, error)
 	GetTickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
 }

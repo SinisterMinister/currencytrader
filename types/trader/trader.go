@@ -12,7 +12,7 @@ type trader struct {
 	provider  types.Provider
 	marketSvc internal.MarketSvc
 	tickerSvc internal.TickerSvc
-	walletSvc types.WalletSvc
+	walletSvc internal.WalletSvc
 	orderSvc  types.OrderSvc
 
 	mutex   sync.RWMutex
@@ -28,6 +28,7 @@ func New(provider types.Provider) internal.Trader {
 
 	t.marketSvc = svc.NewMarket(t)
 	t.tickerSvc = svc.NewTicker(t)
+	t.walletSvc = svc.(provider)
 	return t
 }
 
@@ -47,6 +48,7 @@ func (t *trader) startServices() {
 	if !t.running {
 		t.tickerSvc.Start()
 		t.marketSvc.Start()
+		t.walletSvc.Start()
 
 		t.running = true
 	}

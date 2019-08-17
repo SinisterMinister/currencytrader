@@ -1,56 +1,98 @@
 package wallet
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/shopspring/decimal"
+	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/currency"
+	"github.com/sinisterminister/currencytrader/types/internal"
 )
 
-// Wallet TODO
-type Wallet struct {
-	currency currency.Currency
-	total    decimal.Decimal
+// wallet TODO
+type wallet struct {
+	currency types.Currency
+
+	mutex    sync.RWMutex
 	free     decimal.Decimal
 	locked   decimal.Decimal
 	reserved decimal.Decimal
-	mutex    sync.Mutex
 }
 
-func NewWallet(cur currency.Currency, total decimal.Decimal, free decimal.Decimal,
-	locked decimal.Decimal, reserved decimal.Decimal) *Wallet {
-
-	return &Wallet{
-		currency: cur,
-		total:    total,
-		free:     free,
-		locked:   locked,
-		reserved: reserved,
-		mutex:    sync.Mutex{},
+func New(dto types.WalletDTO) internal.Wallet {
+	return &wallet{
+		currency: currency.New(dto.Currency),
+		free:     dto.Free,
+		locked:   dto.Locked,
+		reserved: dto.Reserved,
 	}
 }
 
-// GetCurrency TODO
-func (w *Wallet) GetCurrency() currency.Currency {
+func (w *wallet) Currency() types.Currency {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
 	return w.currency
 }
 
-// GetTotalBalance TODO
-func (w *Wallet) GetTotalBalance() decimal.Decimal {
-	return w.total
+func (w *wallet) Total() decimal.Decimal {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	return w.free.Add(w.locked)
 }
 
-// GetFreeBalance TODO
-func (w *Wallet) GetFreeBalance() decimal.Decimal {
+func (w *wallet) Free() decimal.Decimal {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
 	return w.free
 }
 
-// GetLockedBalance TODO
-func (w *Wallet) GetLockedBalance() decimal.Decimal {
+func (w *wallet) Locked() decimal.Decimal {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
 	return w.locked
 }
 
-// GetReservedBalance TODO
-func (w *Wallet) GetReservedBalance() decimal.Decimal {
+func (w *wallet) Reserved() decimal.Decimal {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
 	return w.reserved
+}
+
+func (w *wallet) Available() decimal.Decimal {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	return w.free.Sub(w.reserved)
+}
+
+func (w *wallet) Release(amount decimal.Decimal) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if w.reserved.LessThan(amount) {
+		return errors.New("not enough reserved funds to release")
+	}
+
+	w.reserved = w.reserved.Sub(amount)
+	return nil
+}
+func (w *wallet) Reserve(amount decimal.Decimal) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	if w.free.Sub(w.reserved).LessThan(amount) {
+		return errors.New("not enough available funds to freeze")
+	}
+
+	w.reserved = w.reserved.Add(amount)
+	return nil
+}
+
+func (w *wallet) UpdateWallet(dto types.WalletDTO) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	// Skip reserved 
+	w.free = dto.Free
+	w.locked = dto.Locked
 }
