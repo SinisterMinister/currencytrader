@@ -4,12 +4,21 @@ import "github.com/sinisterminister/currencytrader/types"
 
 type MarketSvc interface {
 	types.MarketSvc
-	types.Administerable
 }
 
 type TickerSvc interface {
 	types.TickerSvc
 	types.Administerable
+}
+
+type WalletSvc interface {
+	types.WalletSvc
+	types.Administerable
+}
+
+type Wallet interface {
+	types.Wallet
+	UpdateWallet(dto types.WalletDTO)
 }
 
 type Trader interface {
