@@ -176,7 +176,9 @@ func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 }
 
 func (t *Ticker) broadcastToStreams(market types.Market, data types.Ticker) {
+	t.mutex.RLock()
 	streams, ok := t.streams[market]
+	t.mutex.RUnlock()
 	if !ok {
 		// No streams to broadcast to
 		return

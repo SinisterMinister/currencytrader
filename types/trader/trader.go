@@ -8,7 +8,7 @@ import (
 	"github.com/sinisterminister/currencytrader/types/svc"
 )
 
-type Trader struct {
+type trader struct {
 	provider  types.Provider
 	marketSvc internal.MarketSvc
 	tickerSvc internal.TickerSvc
@@ -21,7 +21,7 @@ type Trader struct {
 }
 
 func New(provider types.Provider) internal.Trader {
-	t := &Trader{
+	t := &trader{
 		provider: provider,
 		stop:     make(chan bool),
 	}
@@ -31,19 +31,19 @@ func New(provider types.Provider) internal.Trader {
 	return t
 }
 
-func (t *Trader) Start() {
+func (t *trader) Start() {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	t.startServices()
 }
 
-func (t *Trader) Stop() {
+func (t *trader) Stop() {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	t.stopServices()
 }
 
-func (t *Trader) startServices() {
+func (t *trader) startServices() {
 	if !t.running {
 		t.tickerSvc.Start()
 		t.marketSvc.Start()
@@ -52,7 +52,7 @@ func (t *Trader) startServices() {
 	}
 }
 
-func (t *Trader) stopServices() {
+func (t *trader) stopServices() {
 	if t.running {
 		t.tickerSvc.Stop()
 		t.marketSvc.Stop()
@@ -61,22 +61,22 @@ func (t *Trader) stopServices() {
 	}
 }
 
-func (t *Trader) OrderSvc() types.OrderSvc {
+func (t *trader) OrderSvc() types.OrderSvc {
 	return t.orderSvc
 }
 
-func (t *Trader) WalletSvc() types.WalletSvc {
+func (t *trader) WalletSvc() types.WalletSvc {
 	return t.walletSvc
 }
 
-func (t *Trader) MarketSvc() types.MarketSvc {
+func (t *trader) MarketSvc() types.MarketSvc {
 	return t.marketSvc
 }
 
-func (t *Trader) TickerSvc() types.TickerSvc {
+func (t *trader) TickerSvc() types.TickerSvc {
 	return t.tickerSvc
 }
 
-func (t *Trader) Provider() types.Provider {
+func (t *trader) Provider() types.Provider {
 	return t.provider
 }
