@@ -8,7 +8,6 @@ import (
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/simulated"
-	"github.com/sinisterminister/currencytrader/types/wallet"
 	"github.com/sirupsen/logrus"
 )
 
@@ -67,7 +66,7 @@ func logWallet(stop <-chan bool, wal types.Wallet) {
 
 		// Data received
 		case <-ticker.C:
-			logrus.WithField("wallet", wallet.ToDTO(wal)).Infof("wallet data for for %s", wal.Currency().Name())
+			logrus.WithField("wallet", wal.ToDTO()).Infof("wallet data for for %s", wal.Currency().Name())
 		}
 	}
 }

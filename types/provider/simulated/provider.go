@@ -47,3 +47,15 @@ func (p *provider) GetWalletStream(stop <-chan bool, currency types.CurrencyDTO)
 	stream = getWalletStream(stop, currency)
 	return
 }
+
+func (p *provider) AttemptOrder(mkt types.MarketDTO, ord types.OrderRequestDTO) (types.OrderDTO, error) {
+	return types.OrderDTO{}, nil
+}
+
+func (p *provider) CancelOrder(order types.OrderDTO) error {
+	return nil
+}
+
+func (p *provider) GetOrder(id string) (types.OrderDTO, error) {
+	return types.OrderDTO{}, nil
+}
