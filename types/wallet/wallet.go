@@ -29,12 +29,12 @@ func New(dto types.WalletDTO) internal.Wallet {
 	}
 }
 
-func ToDTO(wallet types.Wallet) types.WalletDTO {
+func (w *wallet) ToDTO() types.WalletDTO {
 	return types.WalletDTO{
-		Currency: currency.ToDTO(wallet.Currency()),
-		Free:     wallet.Free(),
-		Locked:   wallet.Locked(),
-		Reserved: wallet.Reserved(),
+		Currency: w.Currency().ToDTO(),
+		Free:     w.Free(),
+		Locked:   w.Locked(),
+		Reserved: w.Reserved(),
 	}
 }
 
@@ -97,7 +97,7 @@ func (w *wallet) Reserve(amount decimal.Decimal) error {
 	return nil
 }
 
-func (w *wallet) UpdateWallet(dto types.WalletDTO) {
+func (w *wallet) Update(dto types.WalletDTO) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 

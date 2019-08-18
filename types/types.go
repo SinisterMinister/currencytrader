@@ -11,6 +11,7 @@ type Currency interface {
 	Name() string
 	Precision() int
 	Symbol() string
+	ToDTO() CurrencyDTO
 }
 
 type CurrencyDTO struct {
@@ -31,6 +32,8 @@ type Market interface {
 	QuantityStepSize() decimal.Decimal
 	QuoteCurrency() Currency
 	TickerStream(stop <-chan bool) <-chan Ticker
+	ToDTO() MarketDTO
+	AttemptOrder(req OrderRequest) (Order, error)
 }
 
 type MarketDTO struct {
@@ -52,6 +55,7 @@ type Candlestick interface {
 	Open() decimal.Decimal
 	Timestamp() time.Time
 	Volume() decimal.Decimal
+	ToDTO() CandlestickDTO
 }
 
 type CandlestickDTO struct {
@@ -70,6 +74,7 @@ type Ticker interface {
 	Quantity() decimal.Decimal
 	Timestamp() time.Time
 	Volume() decimal.Decimal
+	ToDTO() TickerDTO
 }
 
 type TickerDTO struct {
@@ -81,7 +86,6 @@ type TickerDTO struct {
 	Volume    decimal.Decimal
 }
 
-// Wallet TODO
 type Wallet interface {
 	Available() decimal.Decimal
 	Currency() Currency
@@ -91,6 +95,7 @@ type Wallet interface {
 	Reserve(amt decimal.Decimal) error
 	Reserved() decimal.Decimal
 	Total() decimal.Decimal
+	ToDTO() WalletDTO
 }
 
 type WalletDTO struct {
@@ -101,11 +106,11 @@ type WalletDTO struct {
 }
 
 // Side represents which side the order will be placed
-type Side int
+type OrderSide int
 
 const (
 	// BuySide represents a buy sided order
-	BuySide Side = iota
+	BuySide OrderSide = iota
 
 	// SellSide represents a sell sided order
 	SellSide
@@ -114,21 +119,22 @@ const (
 type OrderRequest interface {
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
-	Side() Side
+	Side() OrderSide
+	ToDTO() OrderRequestDTO
 }
 
 type OrderRequestDTO struct {
 	Price    decimal.Decimal
 	Quantity decimal.Decimal
-	Side     Side
+	Side     OrderSide
 }
 
 // Status handles the various statuses the Order can be in
-type Status int
+type OrderStatus int
 
 const (
 	// Pending is for orders still working to be fulfilled
-	Pending Status = iota
+	Pending OrderStatus = iota
 
 	// Canceled is for orders that have been cancelled
 	Canceled
@@ -142,19 +148,20 @@ type Order interface {
 	Filled() decimal.Decimal
 	ID() string
 	Request() OrderRequest
-	Status() Status
+	Status() OrderStatus
+	ToDTO() OrderDTO
 }
 
 type OrderDTO struct {
 	CreationTime time.Time
 	Filled       decimal.Decimal
 	ID           string
-	Request      OrderRequest
-	Status       Status
+	Request      OrderRequestDTO
+	Status       OrderStatus
 }
 
 type OrderSvc interface {
-	AttemtOrder(req OrderRequest) Order
+	AttemptOrder(market Market, req OrderRequest) (order Order, err error)
 	CancelOrder(order Order) error
 	GetOrder(id string) (Order, error)
 }
@@ -195,4 +202,7 @@ type Provider interface {
 	GetWalletStream(stop <-chan bool, currency CurrencyDTO) (<-chan WalletDTO, error)
 	GetTicker(market MarketDTO) (TickerDTO, error)
 	GetTickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
+	GetOrder(id string) (OrderDTO, error)
+	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
+	CancelOrder(order OrderDTO) error
 }

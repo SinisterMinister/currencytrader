@@ -21,7 +21,7 @@ type TickerConfig struct {
 	types.TickerDTO
 }
 
-func New(config TickerConfig) types.Ticker {
+func New(config types.TickerDTO) types.Ticker {
 	return &Ticker{
 		ask:       config.Ask,
 		bid:       config.Bid,
@@ -29,6 +29,17 @@ func New(config TickerConfig) types.Ticker {
 		quantity:  config.Quantity,
 		timestamp: config.Timestamp,
 		volume:    config.Volume,
+	}
+}
+
+func (t *Ticker) ToDTO() types.TickerDTO {
+	return types.TickerDTO{
+		Ask:       t.ask,
+		Bid:       t.bid,
+		Price:     t.price,
+		Quantity:  t.quantity,
+		Timestamp: t.timestamp,
+		Volume:    t.volume,
 	}
 }
 

@@ -9,6 +9,14 @@ type currency struct {
 	precision int
 }
 
+func New(cur types.CurrencyDTO) types.Currency {
+	return &currency{
+		name:      cur.Name,
+		symbol:    cur.Symbol,
+		precision: cur.Precision,
+	}
+}
+
 func (c *currency) Name() string {
 	return c.name
 }
@@ -21,15 +29,7 @@ func (c *currency) Precision() int {
 	return c.precision
 }
 
-func New(cur types.CurrencyDTO) types.Currency {
-	return &currency{
-		name:      cur.Name,
-		symbol:    cur.Symbol,
-		precision: cur.Precision,
-	}
-}
-
-func ToDTO(cur types.Currency) types.CurrencyDTO {
+func (cur *currency) ToDTO() types.CurrencyDTO {
 	return types.CurrencyDTO{
 		Name:      cur.Name(),
 		Symbol:    cur.Symbol(),

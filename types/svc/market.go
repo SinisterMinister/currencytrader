@@ -72,11 +72,7 @@ func (m *Market) updateMarkets() {
 	}
 	markets := make([]types.Market, 0, len(rawMarkets))
 	for _, dto := range rawMarkets {
-		conf := market.MarketConfig{
-			MarketDTO: dto,
-			TickerSvc: m.trader.TickerSvc(),
-		}
-		mkt := market.New(conf)
+		mkt := market.New(m.trader, dto)
 		markets = append(markets, mkt)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/currency"
+	"github.com/sinisterminister/currencytrader/types/internal"
 )
 
 // market is where you can trade one currency for another.
@@ -18,14 +19,14 @@ type market struct {
 	maxQuantity      decimal.Decimal
 	quantityStepSize decimal.Decimal
 
-	tickerSvc types.TickerSvc
+	trader internal.Trader
 }
 
-func ToDTO(m types.Market) types.MarketDTO {
+func (m *market) ToDTO() types.MarketDTO {
 	return types.MarketDTO{
 		Name:             m.Name(),
-		BaseCurrency:     currency.ToDTO(m.BaseCurrency()),
-		QuoteCurrency:    currency.ToDTO(m.QuoteCurrency()),
+		BaseCurrency:     m.BaseCurrency().ToDTO(),
+		QuoteCurrency:    m.QuoteCurrency().ToDTO(),
 		MinPrice:         m.MinPrice(),
 		MaxPrice:         m.MaxPrice(),
 		PriceIncrement:   m.PriceIncrement(),
@@ -35,23 +36,18 @@ func ToDTO(m types.Market) types.MarketDTO {
 	}
 }
 
-type MarketConfig struct {
-	types.MarketDTO
-	TickerSvc types.TickerSvc
-}
-
-func New(c MarketConfig) types.Market {
+func New(trader internal.Trader, m types.MarketDTO) types.Market {
 	mkt := &market{
-		name:             c.Name,
-		baseCurrency:     currency.New(c.BaseCurrency),
-		quoteCurrency:    currency.New(c.QuoteCurrency),
-		minPrice:         c.MinPrice,
-		maxPrice:         c.MaxPrice,
-		priceIncrement:   c.PriceIncrement,
-		minQuantity:      c.MinQuantity,
-		maxQuantity:      c.MaxQuantity,
-		quantityStepSize: c.QuantityStepSize,
-		tickerSvc:        c.TickerSvc,
+		name:             m.Name,
+		baseCurrency:     currency.New(m.BaseCurrency),
+		quoteCurrency:    currency.New(m.QuoteCurrency),
+		minPrice:         m.MinPrice,
+		maxPrice:         m.MaxPrice,
+		priceIncrement:   m.PriceIncrement,
+		minQuantity:      m.MinQuantity,
+		maxQuantity:      m.MaxQuantity,
+		quantityStepSize: m.QuantityStepSize,
+		trader:           trader,
 	}
 
 	return mkt
@@ -94,13 +90,17 @@ func (m *market) QuantityStepSize() decimal.Decimal {
 }
 
 func (m *market) Ticker() (types.Ticker, error) {
-	return m.tickerSvc.Ticker(m)
+	return m.trader.TickerSvc().Ticker(m)
 }
 
 func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
-	return m.tickerSvc.TickerStream(stop, m)
+	return m.trader.TickerSvc().TickerStream(stop, m)
 }
 
 func (m *market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
 	return nil
+}
+
+func (m *market) AttemptOrder(req types.OrderRequest) (types.Order, error) {
+	return m.trader.OrderSvc().AttemptOrder(m, req)
 }

@@ -18,7 +18,12 @@ type WalletSvc interface {
 
 type Wallet interface {
 	types.Wallet
-	UpdateWallet(dto types.WalletDTO)
+	Update(dto types.WalletDTO)
+}
+
+type Order interface {
+	types.Order
+	Update(dto types.OrderDTO)
 }
 
 type Trader interface {

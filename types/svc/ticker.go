@@ -5,7 +5,6 @@ import (
 
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
-	"github.com/sinisterminister/currencytrader/types/market"
 	"github.com/sinisterminister/currencytrader/types/ticker"
 	"github.com/sirupsen/logrus"
 )
@@ -42,11 +41,11 @@ func NewTicker(trader internal.Trader) internal.TickerSvc {
 }
 
 func (t *Ticker) Ticker(m types.Market) (tkr types.Ticker, err error) {
-	dto, err := t.trader.Provider().GetTicker(market.ToDTO(m))
+	dto, err := t.trader.Provider().GetTicker(m.ToDTO())
 	if err != nil {
 		return
 	}
-	tkr = ticker.New(ticker.TickerConfig{dto})
+	tkr = ticker.New(dto)
 	return
 }
 
@@ -142,7 +141,7 @@ func (t *Ticker) refreshSources() {
 
 func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 	stop := make(chan bool)
-	stream, err := t.trader.Provider().GetTickerStream(stop, market.ToDTO(mkt))
+	stream, err := t.trader.Provider().GetTickerStream(stop, mkt.ToDTO())
 	wrapper := &sourceWrapper{
 		stop:   stop,
 		stream: stream,
@@ -166,7 +165,7 @@ func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 				// Backup bailout
 				return
 			case payload := <-wrapper.stream:
-				data := ticker.New(ticker.TickerConfig{TickerDTO: payload})
+				data := ticker.New(payload)
 				t.broadcastToStreams(wrapper.market, data)
 			}
 		}
