@@ -108,14 +108,6 @@ type WalletDTO struct {
 // Side represents which side the order will be placed
 type OrderSide int
 
-const (
-	// BuySide represents a buy sided order
-	BuySide OrderSide = iota
-
-	// SellSide represents a sell sided order
-	SellSide
-)
-
 type OrderRequest interface {
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
@@ -131,17 +123,6 @@ type OrderRequestDTO struct {
 
 // Status handles the various statuses the Order can be in
 type OrderStatus int
-
-const (
-	// Pending is for orders still working to be fulfilled
-	Pending OrderStatus = iota
-
-	// Canceled is for orders that have been cancelled
-	Canceled
-
-	// Success is for orders that have succefully filled
-	Success
-)
 
 type Order interface {
 	CreationTime() time.Time
@@ -205,4 +186,5 @@ type Provider interface {
 	GetOrder(id string) (OrderDTO, error)
 	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
 	CancelOrder(order OrderDTO) error
+	GetOrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
 }
