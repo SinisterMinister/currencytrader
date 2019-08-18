@@ -67,7 +67,9 @@ func streamTicker(stop <-chan bool, market types.Market) {
 
 		// Data received
 		case data := <-stream:
-			logrus.WithField("data", data).Infof("stream data recieved for %s market", market.Name())
+			if data != nil {
+				logrus.WithField("data", data.ToDTO()).Infof("stream data recieved for %s market", market.Name())
+			}
 		}
 	}
 }
