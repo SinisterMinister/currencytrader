@@ -59,3 +59,7 @@ func (p *provider) CancelOrder(order types.OrderDTO) error {
 func (p *provider) GetOrder(id string) (types.OrderDTO, error) {
 	return types.OrderDTO{}, nil
 }
+
+func (p *provider) GetOrderStream(stop <-chan bool, order types.OrderDTO) (ch <-chan types.OrderDTO, err error) {
+	return
+}
