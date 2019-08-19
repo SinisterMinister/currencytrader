@@ -49,17 +49,17 @@ func (p *provider) GetWalletStream(stop <-chan bool, currency types.CurrencyDTO)
 }
 
 func (p *provider) AttemptOrder(mkt types.MarketDTO, ord types.OrderRequestDTO) (types.OrderDTO, error) {
-	return types.OrderDTO{}, nil
+	return attemptOrder(mkt, ord)
 }
 
 func (p *provider) CancelOrder(order types.OrderDTO) error {
-	return nil
+	return cancelOrder(order)
 }
 
 func (p *provider) GetOrder(id string) (types.OrderDTO, error) {
-	return types.OrderDTO{}, nil
+	return getOrder(id)
 }
 
 func (p *provider) GetOrderStream(stop <-chan bool, order types.OrderDTO) (ch <-chan types.OrderDTO, err error) {
-	return
+	return getOrderStream(stop, order)
 }

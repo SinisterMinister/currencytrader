@@ -1,11 +1,25 @@
 package simulated
 
 import (
+	"fmt"
 	"math/rand"
+	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/google/uuid"
+	"github.com/sinisterminister/currencytrader/types/order"
 
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
+)
+
+var (
+	mutex       sync.Mutex
+	orders      map[string]types.OrderDTO
+	streams     map[string][]chan types.OrderDTO
+	cancelChans map[string]chan bool
 )
 
 func getCurrencies() []types.CurrencyDTO {
@@ -142,4 +156,125 @@ func getWalletStream(stop <-chan bool, cur types.CurrencyDTO) <-chan types.Walle
 		}
 	}(stop, cur, ch)
 	return ch
+}
+
+func attemptOrder(mk types.MarketDTO, req types.OrderRequestDTO) (types.OrderDTO, error) {
+	order := types.OrderDTO{
+		CreationTime: time.Now(),
+		Filled:       decimal.Zero,
+		ID:           uuid.New().String(),
+		Request:      req,
+		Status:       order.Pending,
+	}
+
+	registerOrder(order)
+
+	return order, nil
+}
+
+func registerOrder(o types.OrderDTO) {
+	mutex.Lock()
+	if orders == nil {
+		orders = make(map[string]types.OrderDTO)
+	}
+	if streams == nil {
+		streams = make(map[string][]chan types.OrderDTO)
+	}
+	if cancelChans == nil {
+		cancelChans = make(map[string]chan bool)
+	}
+
+	orders[o.ID] = o
+	streams[o.ID] = []chan types.OrderDTO{}
+	cancelChans[o.ID] = processOrder(o)
+	mutex.Unlock()
+}
+
+func updateOrder(o types.OrderDTO) {
+	mutex.Lock()
+	orders[o.ID] = o
+
+	chs, ok := streams[o.ID]
+	mutex.Unlock()
+	if !ok {
+		return
+	}
+
+	if len(chs) > 0 {
+		for _, ch := range chs {
+			select {
+			case ch <- o:
+			default:
+				logrus.Warn("skipping blocked order update channel")
+			}
+		}
+	}
+}
+
+func cleanupOrder(o types.OrderDTO) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	delete(cancelChans, o.ID)
+	delete(streams, o.ID)
+}
+
+func processOrder(o types.OrderDTO) chan bool {
+	stop := make(chan bool)
+	defer func(stop chan bool) {
+		ticker := time.NewTicker(time.Duration(rand.Intn(5000)) * time.Millisecond)
+		defer cleanupOrder(o)
+		defer ticker.Stop()
+
+		select {
+		case <-stop:
+			o.Status = order.Canceled
+		case <-ticker.C:
+			o.Status = order.Partial
+		}
+		updateOrder(o)
+
+		if o.Status == order.Canceled {
+			return
+		}
+
+		select {
+		case <-stop:
+			o.Status = order.Canceled
+		case <-ticker.C:
+			o.Status = order.Filled
+		}
+		updateOrder(o)
+	}(stop)
+
+	return stop
+}
+
+func getOrder(id string) (types.OrderDTO, error) {
+	order, ok := orders[id]
+
+	if !ok {
+		return order, fmt.Errorf("could not find order for ID %s", id)
+	}
+
+	return order, nil
+}
+
+func getOrderStream(stop <-chan bool, o types.OrderDTO) (<-chan types.OrderDTO, error) {
+	if _, ok := streams[o.ID]; !ok {
+		return nil, fmt.Errorf("cannot get update stream for order %s", o.ID)
+	}
+	ch := make(chan types.OrderDTO)
+	mutex.Lock()
+	streams[o.ID] = append(streams[o.ID], ch)
+	mutex.Unlock()
+	return ch, nil
+}
+
+func cancelOrder(o types.OrderDTO) error {
+	stop, ok := cancelChans[o.ID]
+	if !ok {
+		return fmt.Errorf("could not cancel order %s", o.ID)
+	}
+	close(stop)
+	return nil
 }
