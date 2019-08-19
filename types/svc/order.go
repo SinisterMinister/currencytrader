@@ -55,7 +55,7 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 
 func (svc *order) handleOrderStream(o internal.Order) {
 	// Bail if the order is already closed
-	if o.Status() == ord.Success || o.Status() == ord.Canceled {
+	if o.Status() == ord.Filled || o.Status() == ord.Canceled {
 		return
 	}
 
@@ -74,7 +74,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 				return
 			default:
 				o.Update(data)
-				if data.Status == ord.Success || data.Status == ord.Canceled {
+				if data.Status == ord.Filled || data.Status == ord.Canceled {
 					return
 				}
 			}
