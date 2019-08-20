@@ -220,7 +220,7 @@ func cleanupOrder(o types.OrderDTO) {
 
 func processOrder(o types.OrderDTO) chan bool {
 	stop := make(chan bool)
-	defer func(stop chan bool) {
+	go func(stop chan bool) {
 		ticker := time.NewTicker(time.Duration(rand.Intn(5000)) * time.Millisecond)
 		defer cleanupOrder(o)
 		defer ticker.Stop()
@@ -260,13 +260,13 @@ func getOrder(id string) (types.OrderDTO, error) {
 }
 
 func getOrderStream(stop <-chan bool, o types.OrderDTO) (<-chan types.OrderDTO, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if _, ok := streams[o.ID]; !ok {
 		return nil, fmt.Errorf("cannot get update stream for order %s", o.ID)
 	}
 	ch := make(chan types.OrderDTO)
-	mutex.Lock()
 	streams[o.ID] = append(streams[o.ID], ch)
-	mutex.Unlock()
 	return ch, nil
 }
 
