@@ -62,12 +62,16 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 	}
 
 	logrus.Infof("ticker for market %s is %s", mkt.Name(), ticker.ToDTO())
+
+	// Place the order
 	buy, err := mkt.AttemptOrder(order.Buy, ticker.Price(), decimal.NewFromFloat(10))
-	// Bail on error
 	if err != nil {
+		// Bail on error
 		logrus.WithError(err).Error("could not place order")
 		return
 	}
+
+	// Start a ticker we can use to poll the order status
 	t := time.NewTicker(1 * time.Second)
 
 	// Watch and wait for the order to be fulfilled or canceled
@@ -75,6 +79,8 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 		select {
 		case <-t.C:
 			logrus.Infof("order %s status %s", buy.ID(), buy.Status())
+
+			// If filled or canceled, we're done
 			if buy.Status() == order.Filled || buy.Status() == order.Canceled {
 				logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
 				return
