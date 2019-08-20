@@ -5,6 +5,7 @@ import (
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/currency"
 	"github.com/sinisterminister/currencytrader/types/internal"
+	"github.com/sinisterminister/currencytrader/types/order"
 )
 
 // market is where you can trade one currency for another.
@@ -101,6 +102,12 @@ func (m *market) CandlestickStream(stop <-chan bool, interval string) <-chan typ
 	return nil
 }
 
-func (m *market) AttemptOrder(req types.OrderRequest) (types.Order, error) {
-	return m.trader.OrderSvc().AttemptOrder(m, req)
+func (m *market) AttemptOrder(side types.OrderSide, price decimal.Decimal, quantity decimal.Decimal) (types.Order, error) {
+	req := types.OrderRequestDTO{
+		Side:     side,
+		Price:    price,
+		Quantity: quantity,
+	}
+
+	return m.trader.OrderSvc().AttemptOrder(m, order.NewRequestFromDTO(req))
 }

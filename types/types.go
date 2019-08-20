@@ -33,7 +33,7 @@ type Market interface {
 	QuoteCurrency() Currency
 	TickerStream(stop <-chan bool) <-chan Ticker
 	ToDTO() MarketDTO
-	AttemptOrder(req OrderRequest) (Order, error)
+	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
 }
 
 type MarketDTO struct {
