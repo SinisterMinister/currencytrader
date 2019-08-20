@@ -29,6 +29,7 @@ func New(provider types.Provider) internal.Trader {
 	t.marketSvc = svc.NewMarket(t)
 	t.tickerSvc = svc.NewTicker(t)
 	t.walletSvc = svc.NewWallet(t)
+	t.orderSvc = svc.NewOrder(t)
 	return t
 }
 
