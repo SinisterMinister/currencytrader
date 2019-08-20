@@ -31,6 +31,7 @@ type Market interface {
 	PriceIncrement() decimal.Decimal
 	QuantityStepSize() decimal.Decimal
 	QuoteCurrency() Currency
+	Ticker() (Ticker, error)
 	TickerStream(stop <-chan bool) <-chan Ticker
 	ToDTO() MarketDTO
 	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
