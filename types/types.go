@@ -107,7 +107,7 @@ type WalletDTO struct {
 }
 
 // Side represents which side the order will be placed
-type OrderSide int
+type OrderSide string
 
 type OrderRequest interface {
 	Price() decimal.Decimal
@@ -123,7 +123,7 @@ type OrderRequestDTO struct {
 }
 
 // Status handles the various statuses the Order can be in
-type OrderStatus int
+type OrderStatus string
 
 type Order interface {
 	CreationTime() time.Time
