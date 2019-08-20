@@ -38,17 +38,16 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Wait for the interrupt
-	select {
-	case <-interrupt:
-		// Let the user know what happened
-		logrus.Warn("Received an interrupt signal! Shutting down!")
+	<-interrupt
 
-		// Kill the streams
-		close(killSwitch)
+	// Let the user know what happened
+	logrus.Warn("Received an interrupt signal! Shutting down!")
 
-		// Shutdown the
-		trader.Stop()
-	}
+	// Kill the streams
+	close(killSwitch)
+
+	// Shutdown the trader
+	trader.Stop()
 }
 
 func placeOrders(stop <-chan bool, mkt types.Market) {
@@ -76,15 +75,13 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 
 	// Watch and wait for the order to be fulfilled or canceled
 	for {
-		select {
-		case <-t.C:
-			logrus.Infof("order %s status %s", buy.ID(), buy.Status())
+		<-t.C
+		logrus.Infof("order %s status %s", buy.ID(), buy.Status())
 
-			// If filled or canceled, we're done
-			if buy.Status() == order.Filled || buy.Status() == order.Canceled {
-				logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
-				return
-			}
+		// If filled or canceled, we're done
+		if buy.Status() == order.Filled || buy.Status() == order.Canceled {
+			logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
+			return
 		}
 	}
 }

@@ -35,17 +35,16 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Wait for the interrupt
-	select {
-	case <-interrupt:
-		// Let the user know what happened
-		logrus.Warn("Received an interrupt signal! Shutting down!")
+	<-interrupt
+	
+	// Let the user know what happened
+	logrus.Warn("Received an interrupt signal! Shutting down!")
 
-		// Kill the loggers
-		close(killSwitch)
+	// Kill the streams
+	close(killSwitch)
 
-		// Shutdown the
-		trader.Stop()
-	}
+	// Shutdown the trader
+	trader.Stop()
 }
 
 func logWallet(stop <-chan bool, wal types.Wallet) {
