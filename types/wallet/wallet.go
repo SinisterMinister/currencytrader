@@ -12,88 +12,70 @@ import (
 
 // wallet TODO
 type wallet struct {
-	currency types.Currency
-
-	mutex    sync.RWMutex
-	free     decimal.Decimal
-	locked   decimal.Decimal
-	reserved decimal.Decimal
+	mutex sync.RWMutex
+	dto   types.WalletDTO
 }
 
-func New(dto types.WalletDTO) internal.Wallet {
-	return &wallet{
-		currency: currency.New(dto.Currency),
-		free:     dto.Free,
-		locked:   dto.Locked,
-		reserved: dto.Reserved,
-	}
-}
+func New(dto types.WalletDTO) internal.Wallet { return &wallet{dto: dto} }
 
-func (w *wallet) ToDTO() types.WalletDTO {
-	return types.WalletDTO{
-		Currency: w.Currency().ToDTO(),
-		Free:     w.Free(),
-		Locked:   w.Locked(),
-		Reserved: w.Reserved(),
-	}
-}
+func (w *wallet) ToDTO() types.WalletDTO { return w.dto }
 
 func (w *wallet) Currency() types.Currency {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.currency
+	return currency.New(w.dto.Currency)
 }
 
 func (w *wallet) Total() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.free.Add(w.locked)
+	return w.dto.Free.Add(w.dto.Locked)
 }
 
 func (w *wallet) Free() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.free
+	return w.dto.Free
 }
 
 func (w *wallet) Locked() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.locked
+	return w.dto.Locked
 }
 
 func (w *wallet) Reserved() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.reserved
+	return w.dto.Reserved
 }
 
 func (w *wallet) Available() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return w.free.Sub(w.reserved)
+	return w.dto.Free.Sub(w.dto.Reserved)
 }
 
 func (w *wallet) Release(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.reserved.LessThan(amount) {
+	if w.dto.Reserved.LessThan(amount) {
 		return errors.New("not enough reserved funds to release")
 	}
 
-	w.reserved = w.reserved.Sub(amount)
+	w.dto.Reserved = w.dto.Reserved.Sub(amount)
 	return nil
 }
 func (w *wallet) Reserve(amount decimal.Decimal) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	if w.free.Sub(w.reserved).LessThan(amount) {
+	if w.dto.Free.Sub(w.dto.Reserved).LessThan(amount) {
 		return errors.New("not enough available funds to freeze")
 	}
 
-	w.reserved = w.reserved.Add(amount)
+	w.dto.Reserved = w.dto.Reserved.Add(amount)
 	return nil
 }
 
@@ -102,6 +84,6 @@ func (w *wallet) Update(dto types.WalletDTO) {
 	defer w.mutex.Unlock()
 
 	// Skip reserved
-	w.free = dto.Free
-	w.locked = dto.Locked
+	w.dto.Free = dto.Free
+	w.dto.Locked = dto.Locked
 }

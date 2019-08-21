@@ -10,85 +10,40 @@ import (
 
 // market is where you can trade one currency for another.
 type market struct {
-	name             string
-	baseCurrency     types.Currency
-	quoteCurrency    types.Currency
-	minPrice         decimal.Decimal
-	maxPrice         decimal.Decimal
-	priceIncrement   decimal.Decimal
-	minQuantity      decimal.Decimal
-	maxQuantity      decimal.Decimal
-	quantityStepSize decimal.Decimal
-
+	dto    types.MarketDTO
 	trader internal.Trader
 }
 
 func (m *market) ToDTO() types.MarketDTO {
-	return types.MarketDTO{
-		Name:             m.Name(),
-		BaseCurrency:     m.BaseCurrency().ToDTO(),
-		QuoteCurrency:    m.QuoteCurrency().ToDTO(),
-		MinPrice:         m.MinPrice(),
-		MaxPrice:         m.MaxPrice(),
-		PriceIncrement:   m.PriceIncrement(),
-		MinQuantity:      m.MinQuantity(),
-		MaxQuantity:      m.MaxQuantity(),
-		QuantityStepSize: m.QuantityStepSize(),
-	}
+	return m.dto
 }
 
 func New(trader internal.Trader, m types.MarketDTO) types.Market {
 	mkt := &market{
-		name:             m.Name,
-		baseCurrency:     currency.New(m.BaseCurrency),
-		quoteCurrency:    currency.New(m.QuoteCurrency),
-		minPrice:         m.MinPrice,
-		maxPrice:         m.MaxPrice,
-		priceIncrement:   m.PriceIncrement,
-		minQuantity:      m.MinQuantity,
-		maxQuantity:      m.MaxQuantity,
-		quantityStepSize: m.QuantityStepSize,
-		trader:           trader,
+		dto:    m,
+		trader: trader,
 	}
 
 	return mkt
 }
 
-func (m *market) Name() string {
-	return m.name
-}
+func (m *market) Name() string { return m.dto.Name }
 
-func (m *market) BaseCurrency() types.Currency {
-	return m.baseCurrency
-}
+func (m *market) BaseCurrency() types.Currency { return currency.New(m.dto.BaseCurrency) }
 
-func (m *market) QuoteCurrency() types.Currency {
-	return m.quoteCurrency
-}
+func (m *market) QuoteCurrency() types.Currency { return currency.New(m.dto.QuoteCurrency) }
 
-func (m *market) MinPrice() decimal.Decimal {
-	return m.minPrice
-}
+func (m *market) MinPrice() decimal.Decimal { return m.dto.MinPrice }
 
-func (m *market) MaxPrice() decimal.Decimal {
-	return m.maxPrice
-}
+func (m *market) MaxPrice() decimal.Decimal { return m.dto.MaxPrice }
 
-func (m *market) PriceIncrement() decimal.Decimal {
-	return m.priceIncrement
-}
+func (m *market) PriceIncrement() decimal.Decimal { return m.dto.PriceIncrement }
 
-func (m *market) MinQuantity() decimal.Decimal {
-	return m.minQuantity
-}
+func (m *market) MinQuantity() decimal.Decimal { return m.dto.MinQuantity }
 
-func (m *market) MaxQuantity() decimal.Decimal {
-	return m.maxQuantity
-}
+func (m *market) MaxQuantity() decimal.Decimal { return m.dto.MaxQuantity }
 
-func (m *market) QuantityStepSize() decimal.Decimal {
-	return m.quantityStepSize
-}
+func (m *market) QuantityStepSize() decimal.Decimal { return m.dto.QuantityStepSize }
 
 func (m *market) Ticker() (types.Ticker, error) {
 	return m.trader.TickerSvc().Ticker(m)

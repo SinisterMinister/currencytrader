@@ -7,43 +7,27 @@ import (
 
 // Request represents an order to be placed by the provider
 type request struct {
-	side     types.OrderSide
-	quantity decimal.Decimal
-	price    decimal.Decimal
+	dto types.OrderRequestDTO
 }
 
 func NewRequestFromDTO(dto types.OrderRequestDTO) types.OrderRequest {
-	return &request{
-		side:     dto.Side,
-		quantity: dto.Quantity,
-		price:    dto.Price,
-	}
+	return &request{dto}
 }
 
 func NewRequest(side types.OrderSide, quantity decimal.Decimal, price decimal.Decimal) types.OrderRequest {
-	return &request{
-		side:     side,
-		quantity: quantity,
-		price:    price,
-	}
+	return &request{types.OrderRequestDTO{
+		Side:     side,
+		Price:    price,
+		Quantity: quantity,
+	}}
 }
 
-func (req *request) ToDTO() types.OrderRequestDTO {
-	return types.OrderRequestDTO{
-		Side:     req.Side(),
-		Price:    req.Price(),
-		Quantity: req.Quantity(),
-	}
+func (r *request) ToDTO() types.OrderRequestDTO {
+	return r.dto
 }
 
-func (r *request) Side() types.OrderSide {
-	return r.side
-}
+func (r *request) Side() types.OrderSide { return r.dto.Side }
 
-func (r *request) Quantity() decimal.Decimal {
-	return r.quantity
-}
+func (r *request) Quantity() decimal.Decimal { return r.dto.Quantity }
 
-func (r *request) Price() decimal.Decimal {
-	return r.price
-}
+func (r *request) Price() decimal.Decimal { return r.dto.Price }
