@@ -59,10 +59,8 @@ func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan type
 	t.registerStream(wrapper)
 
 	go func() {
-		select {
-		case <-stop:
-			t.deregisterStream(wrapper)
-		}
+		<-stop
+		t.deregisterStream(wrapper)
 	}()
 
 	t.mutex.RLock()
