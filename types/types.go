@@ -131,6 +131,7 @@ type Order interface {
 	ID() string
 	Request() OrderRequest
 	Status() OrderStatus
+	StatusStream(stop <-chan bool) <-chan OrderStatus
 	ToDTO() OrderDTO
 }
 

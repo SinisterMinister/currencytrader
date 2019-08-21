@@ -55,7 +55,7 @@ func (o *order) Status() types.OrderStatus {
 	return o.dto.Status
 }
 
-func (o *order) GetStatusStream(stop <-chan bool) <-chan types.OrderStatus {
+func (o *order) StatusStream(stop <-chan bool) <-chan types.OrderStatus {
 	stream := make(chan types.OrderStatus)
 	o.registerStream(stop, stream)
 	return stream
@@ -103,14 +103,25 @@ func (o *order) Update(dto types.OrderDTO) {
 	defer o.mutex.Unlock()
 	o.dto.Status = dto.Status
 	o.dto.Filled = dto.Filled
+	o.broadcastToStreams(dto.Status)
+}
+
+func (o *order) broadcastToStreams(status types.OrderStatus) {
+	streams := o.streams[:0]
 	for _, stream := range o.streams {
 		select {
-		case stream <- dto.Status:
+		case stream <- status:
+			if status == Filled || status == Canceled {
+				close(stream)
+				continue
+			}
 		default:
 			// skip blocked channels
 			logrus.Warnf("skipping blocked order status channel for order %s", o.ID())
 		}
+		streams = append(streams, stream)
 	}
+	o.streams = streams
 }
 
 func (o *order) ToDTO() types.OrderDTO {

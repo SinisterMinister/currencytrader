@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types/order"
@@ -70,18 +69,13 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 		return
 	}
 
-	// Start a ticker we can use to poll the order status
-	t := time.NewTicker(1 * time.Second)
+	// Grab the order update stream
+	stream := buy.StatusStream(stop)
 
-	// Watch and wait for the order to be fulfilled or canceled
-	for {
-		<-t.C
-		logrus.Infof("order %s status %s", buy.ID(), buy.Status())
-
-		// If filled or canceled, we're done
-		if buy.Status() == order.Filled || buy.Status() == order.Canceled {
-			logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
-			return
-		}
+	// Watch the stream for the order status
+	for status := range stream {
+		logrus.Infof("order %s status %s", buy.ID(), status)
 	}
+
+	logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
 }
