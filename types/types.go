@@ -30,6 +30,8 @@ type CandleDTO struct {
 	Volume    decimal.Decimal
 }
 
+type CandleInterval string
+
 // Currency TODO
 type Currency interface {
 	Name() string
@@ -47,7 +49,7 @@ type CurrencyDTO struct {
 type Market interface {
 	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
 	BaseCurrency() Currency
-	Candle(interval MarketInterval) Candle
+	Candle(interval CandleInterval) Candle
 	MaxPrice() decimal.Decimal
 	MaxQuantity() decimal.Decimal
 	MinPrice() decimal.Decimal
@@ -72,8 +74,6 @@ type MarketDTO struct {
 	MaxQuantity      decimal.Decimal
 	QuantityStepSize decimal.Decimal
 }
-
-type MarketInterval string
 
 type MarketSvc interface {
 	Market(cur0 Currency, cur1 Currency) (Market, error)
@@ -126,6 +126,7 @@ type OrderSvc interface {
 type Provider interface {
 	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
 	CancelOrder(order OrderDTO) error
+	Candle(interval CandleInterval) (Candle, error)
 	Currencies() ([]CurrencyDTO, error)
 	Markets() ([]MarketDTO, error)
 	Order(id string) (OrderDTO, error)

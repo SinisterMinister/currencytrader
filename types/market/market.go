@@ -53,7 +53,7 @@ func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return m.trader.TickerSvc().TickerStream(stop, m)
 }
 
-func (m *market) Candle(interval types.MarketInterval) types.Candle {
+func (m *market) Candle(interval types.CandleInterval) types.Candle {
 	return nil
 }
 

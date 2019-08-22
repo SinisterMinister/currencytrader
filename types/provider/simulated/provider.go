@@ -63,3 +63,7 @@ func (p *provider) Order(id string) (types.OrderDTO, error) {
 func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (ch <-chan types.OrderDTO, err error) {
 	return getOrderStream(stop, order)
 }
+
+func (p *provider) Candle(interval types.CandleInterval) (candle types.Candle, err error) {
+	return
+}
