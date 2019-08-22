@@ -278,3 +278,19 @@ func cancelOrder(o types.OrderDTO) error {
 	close(stop)
 	return nil
 }
+
+func getCandles(periods int) []types.CandleDTO {
+	candles := []types.CandleDTO{}
+
+	for index := 0; index < periods; index++ {
+		candles = append(candles, types.CandleDTO{})
+	}
+
+	return candles
+}
+
+func randDecimal(min float64, max float64) decimal.Decimal {
+	space := max - min
+	init := rand.Float64() * space
+	return decimal.NewFromFloat(init + min)
+}

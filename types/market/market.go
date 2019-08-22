@@ -3,6 +3,7 @@ package market
 import (
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/candle"
 	"github.com/sinisterminister/currencytrader/types/currency"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/order"
@@ -53,8 +54,18 @@ func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return m.trader.TickerSvc().TickerStream(stop, m)
 }
 
-func (m *market) Candle(interval types.CandleInterval) types.Candle {
-	return nil
+func (m *market) Candles(interval types.CandleInterval, periods int) ([]types.Candle, error) {
+	candles := []types.Candle{}
+	dtos, err := m.trader.Provider().Candles(interval, periods)
+	if err != nil {
+		return candles, err
+	}
+
+	for _, c := range dtos {
+		candles = append(candles, candle.New(c))
+	}
+
+	return candles, nil
 }
 
 func (m *market) AttemptOrder(side types.OrderSide, price decimal.Decimal, quantity decimal.Decimal) (types.Order, error) {

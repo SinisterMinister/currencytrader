@@ -64,6 +64,7 @@ func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (ch <-cha
 	return getOrderStream(stop, order)
 }
 
-func (p *provider) Candle(interval types.CandleInterval) (candle types.Candle, err error) {
+func (p *provider) Candles(interval types.CandleInterval, periods int) (candles []types.CandleDTO, err error) {
+	candles = getCandles(periods)
 	return
 }
