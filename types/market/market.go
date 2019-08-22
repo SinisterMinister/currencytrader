@@ -53,7 +53,7 @@ func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return m.trader.TickerSvc().TickerStream(stop, m)
 }
 
-func (m *market) CandlestickStream(stop <-chan bool, interval string) <-chan types.Candlestick {
+func (m *market) Candle(interval types.MarketInterval) types.Candle {
 	return nil
 }
 
@@ -65,4 +65,5 @@ func (m *market) AttemptOrder(side types.OrderSide, price decimal.Decimal, quant
 	}
 
 	return m.trader.OrderSvc().AttemptOrder(m, order.NewRequestFromDTO(req))
+
 }

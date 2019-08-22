@@ -30,7 +30,7 @@ func NewMarket(trader internal.Trader) internal.MarketSvc {
 	return svc
 }
 
-func (m *Market) GetMarket(cur0 types.Currency, cur1 types.Currency) (market types.Market, err error) {
+func (m *Market) Market(cur0 types.Currency, cur1 types.Currency) (market types.Market, err error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	for _, mkt := range m.markets {
@@ -48,7 +48,7 @@ func (m *Market) GetMarket(cur0 types.Currency, cur1 types.Currency) (market typ
 	return market, fmt.Errorf("Could not find market for currencies '%s', '%s'", cur0.Name(), cur1.Name())
 }
 
-func (m *Market) GetMarkets() []types.Market {
+func (m *Market) Markets() []types.Market {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.updateMarkets()
@@ -66,7 +66,7 @@ func (m *Market) updateMarkets() {
 		}
 	}
 
-	rawMarkets, err := m.trader.Provider().GetMarkets()
+	rawMarkets, err := m.trader.Provider().Markets()
 	if err != nil {
 		logrus.WithError(err).Error("Could not get markets from provider!")
 	}

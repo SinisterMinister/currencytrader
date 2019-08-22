@@ -19,7 +19,7 @@ func main() {
 	trader.Start()
 
 	// Get the available markets
-	markets := trader.MarketSvc().GetMarkets()
+	markets := trader.MarketSvc().Markets()
 
 	// Setup a close channel
 	killSwitch := make(chan bool)
@@ -35,7 +35,7 @@ func main() {
 
 	// Wait for the interrupt
 	<-interrupt
-	
+
 	// Let the user know what happened
 	logrus.Warn("Received an interrupt signal! Shutting down!")
 

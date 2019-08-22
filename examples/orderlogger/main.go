@@ -22,7 +22,7 @@ func main() {
 	trader.Start()
 
 	// Get the available markets
-	markets := trader.MarketSvc().GetMarkets()
+	markets := trader.MarketSvc().Markets()
 
 	// Setup a close channel
 	killSwitch := make(chan bool)

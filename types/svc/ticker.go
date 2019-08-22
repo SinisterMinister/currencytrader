@@ -41,7 +41,7 @@ func NewTicker(trader internal.Trader) internal.TickerSvc {
 }
 
 func (t *Ticker) Ticker(m types.Market) (tkr types.Ticker, err error) {
-	dto, err := t.trader.Provider().GetTicker(m.ToDTO())
+	dto, err := t.trader.Provider().Ticker(m.ToDTO())
 	if err != nil {
 		return
 	}
@@ -139,7 +139,7 @@ func (t *Ticker) refreshSources() {
 
 func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 	stop := make(chan bool)
-	stream, err := t.trader.Provider().GetTickerStream(stop, mkt.ToDTO())
+	stream, err := t.trader.Provider().TickerStream(stop, mkt.ToDTO())
 	wrapper := &sourceWrapper{
 		stop:   stop,
 		stream: stream,

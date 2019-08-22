@@ -25,8 +25,8 @@ func NewOrder(trader internal.Trader) types.OrderSvc {
 	return svc
 }
 
-func (svc *order) GetOrder(id string) (order types.Order, err error) {
-	dto, err := svc.trader.Provider().GetOrder(id)
+func (svc *order) Order(id string) (order types.Order, err error) {
+	dto, err := svc.trader.Provider().Order(id)
 	if err != nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 		return
 	}
 
-	stream, err := svc.trader.Provider().GetOrderStream(svc.stop, o.ToDTO())
+	stream, err := svc.trader.Provider().OrderStream(svc.stop, o.ToDTO())
 	if err != nil {
 		logrus.WithError(err).Errorf("could not get order stream for order %s", o.ID())
 	}

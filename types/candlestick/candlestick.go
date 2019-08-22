@@ -8,10 +8,10 @@ import (
 )
 
 type candlestick struct {
-	dto types.CandlestickDTO
+	dto types.CandleDTO
 }
 
-func New(dto types.CandlestickDTO) types.Candlestick {
+func New(dto types.CandleDTO) types.Candle {
 	return &candlestick{dto}
 }
 
@@ -27,4 +27,4 @@ func (c *candlestick) Timestamp() time.Time { return c.dto.Timestamp }
 
 func (c *candlestick) Volume() decimal.Decimal { return c.dto.Volume }
 
-func (c *candlestick) ToDTO() types.CandlestickDTO { return c.dto }
+func (c *candlestick) ToDTO() types.CandleDTO { return c.dto }

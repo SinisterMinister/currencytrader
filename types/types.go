@@ -6,6 +6,30 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type Administerable interface {
+	Start()
+	Stop()
+}
+
+type Candle interface {
+	Close() decimal.Decimal
+	High() decimal.Decimal
+	Low() decimal.Decimal
+	Open() decimal.Decimal
+	Timestamp() time.Time
+	ToDTO() CandleDTO
+	Volume() decimal.Decimal
+}
+
+type CandleDTO struct {
+	Close     decimal.Decimal
+	High      decimal.Decimal
+	Low       decimal.Decimal
+	Open      decimal.Decimal
+	Timestamp time.Time
+	Volume    decimal.Decimal
+}
+
 // Currency TODO
 type Currency interface {
 	Name() string
@@ -21,8 +45,9 @@ type CurrencyDTO struct {
 }
 
 type Market interface {
+	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
 	BaseCurrency() Currency
-	CandlestickStream(stop <-chan bool, interval string) <-chan Candlestick
+	Candle(interval MarketInterval) Candle
 	MaxPrice() decimal.Decimal
 	MaxQuantity() decimal.Decimal
 	MinPrice() decimal.Decimal
@@ -34,7 +59,6 @@ type Market interface {
 	Ticker() (Ticker, error)
 	TickerStream(stop <-chan bool) <-chan Ticker
 	ToDTO() MarketDTO
-	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
 }
 
 type MarketDTO struct {
@@ -49,81 +73,12 @@ type MarketDTO struct {
 	QuantityStepSize decimal.Decimal
 }
 
-type Candlestick interface {
-	Close() decimal.Decimal
-	High() decimal.Decimal
-	Low() decimal.Decimal
-	Open() decimal.Decimal
-	Timestamp() time.Time
-	Volume() decimal.Decimal
-	ToDTO() CandlestickDTO
+type MarketInterval string
+
+type MarketSvc interface {
+	Market(cur0 Currency, cur1 Currency) (Market, error)
+	Markets() []Market
 }
-
-type CandlestickDTO struct {
-	Close     decimal.Decimal
-	High      decimal.Decimal
-	Low       decimal.Decimal
-	Open      decimal.Decimal
-	Timestamp time.Time
-	Volume    decimal.Decimal
-}
-
-type Ticker interface {
-	Ask() decimal.Decimal
-	Bid() decimal.Decimal
-	Price() decimal.Decimal
-	Quantity() decimal.Decimal
-	Timestamp() time.Time
-	Volume() decimal.Decimal
-	ToDTO() TickerDTO
-}
-
-type TickerDTO struct {
-	Ask       decimal.Decimal
-	Bid       decimal.Decimal
-	Price     decimal.Decimal
-	Quantity  decimal.Decimal
-	Timestamp time.Time
-	Volume    decimal.Decimal
-}
-
-type Wallet interface {
-	Available() decimal.Decimal
-	Currency() Currency
-	Free() decimal.Decimal
-	Locked() decimal.Decimal
-	Release(amt decimal.Decimal) error
-	Reserve(amt decimal.Decimal) error
-	Reserved() decimal.Decimal
-	Total() decimal.Decimal
-	ToDTO() WalletDTO
-}
-
-type WalletDTO struct {
-	Currency CurrencyDTO
-	Free     decimal.Decimal
-	Locked   decimal.Decimal
-	Reserved decimal.Decimal
-}
-
-// Side represents which side the order will be placed
-type OrderSide string
-
-type OrderRequest interface {
-	Price() decimal.Decimal
-	Quantity() decimal.Decimal
-	Side() OrderSide
-	ToDTO() OrderRequestDTO
-}
-
-type OrderRequestDTO struct {
-	Price    decimal.Decimal
-	Quantity decimal.Decimal
-	Side     OrderSide
-}
-
-// Status handles the various statuses the Order can be in
-type OrderStatus string
 
 type Order interface {
 	CreationTime() time.Time
@@ -143,25 +98,71 @@ type OrderDTO struct {
 	Status       OrderStatus
 }
 
+type OrderRequest interface {
+	Price() decimal.Decimal
+	Quantity() decimal.Decimal
+	Side() OrderSide
+	ToDTO() OrderRequestDTO
+}
+
+type OrderRequestDTO struct {
+	Price    decimal.Decimal
+	Quantity decimal.Decimal
+	Side     OrderSide
+}
+
+// Side represents which side the order will be placed
+type OrderSide string
+
+// Status handles the various statuses the Order can be in
+type OrderStatus string
+
 type OrderSvc interface {
 	AttemptOrder(market Market, req OrderRequest) (order Order, err error)
 	CancelOrder(order Order) error
-	GetOrder(id string) (Order, error)
+	Order(id string) (Order, error)
 }
 
-type Administerable interface {
-	Start()
-	Stop()
+type Provider interface {
+	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
+	CancelOrder(order OrderDTO) error
+	Currencies() ([]CurrencyDTO, error)
+	Markets() ([]MarketDTO, error)
+	Order(id string) (OrderDTO, error)
+	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
+	Ticker(market MarketDTO) (TickerDTO, error)
+	TickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
+	Wallet(currency CurrencyDTO) (WalletDTO, error)
+	Wallets() ([]WalletDTO, error)
+	WalletStream(stop <-chan bool, currency CurrencyDTO) (<-chan WalletDTO, error)
 }
 
-type WalletSvc interface {
-	GetWallet(currency Currency) (Wallet, error)
-	GetWallets() []Wallet
+type Trader interface {
+	Administerable
+
+	MarketSvc() MarketSvc
+	OrderSvc() OrderSvc
+	TickerSvc() TickerSvc
+	WalletSvc() WalletSvc
 }
 
-type MarketSvc interface {
-	GetMarket(cur0 Currency, cur1 Currency) (Market, error)
-	GetMarkets() []Market
+type Ticker interface {
+	Ask() decimal.Decimal
+	Bid() decimal.Decimal
+	Price() decimal.Decimal
+	Quantity() decimal.Decimal
+	Timestamp() time.Time
+	ToDTO() TickerDTO
+	Volume() decimal.Decimal
+}
+
+type TickerDTO struct {
+	Ask       decimal.Decimal
+	Bid       decimal.Decimal
+	Price     decimal.Decimal
+	Quantity  decimal.Decimal
+	Timestamp time.Time
+	Volume    decimal.Decimal
 }
 
 type TickerSvc interface {
@@ -169,24 +170,26 @@ type TickerSvc interface {
 	TickerStream(stop <-chan bool, market Market) <-chan Ticker
 }
 
-type Trader interface {
-	Administerable
-	OrderSvc() OrderSvc
-	WalletSvc() WalletSvc
-	MarketSvc() MarketSvc
-	TickerSvc() TickerSvc
+type Wallet interface {
+	Available() decimal.Decimal
+	Currency() Currency
+	Free() decimal.Decimal
+	Locked() decimal.Decimal
+	Release(amt decimal.Decimal) error
+	Reserve(amt decimal.Decimal) error
+	Reserved() decimal.Decimal
+	ToDTO() WalletDTO
+	Total() decimal.Decimal
 }
 
-type Provider interface {
-	GetMarkets() ([]MarketDTO, error)
-	GetCurrencies() ([]CurrencyDTO, error)
-	GetWallets() ([]WalletDTO, error)
-	GetWallet(currency CurrencyDTO) (WalletDTO, error)
-	GetWalletStream(stop <-chan bool, currency CurrencyDTO) (<-chan WalletDTO, error)
-	GetTicker(market MarketDTO) (TickerDTO, error)
-	GetTickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
-	GetOrder(id string) (OrderDTO, error)
-	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
-	CancelOrder(order OrderDTO) error
-	GetOrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
+type WalletDTO struct {
+	Currency CurrencyDTO
+	Free     decimal.Decimal
+	Locked   decimal.Decimal
+	Reserved decimal.Decimal
+}
+
+type WalletSvc interface {
+	Wallet(currency Currency) (Wallet, error)
+	Wallets() []Wallet
 }

@@ -38,7 +38,7 @@ func (w *wallet) Stop() {
 	w.mutex.Unlock()
 }
 
-func (w *wallet) GetWallet(currency types.Currency) (wal types.Wallet, err error) {
+func (w *wallet) Wallet(currency types.Currency) (wal types.Wallet, err error) {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 
@@ -52,7 +52,7 @@ func (w *wallet) GetWallet(currency types.Currency) (wal types.Wallet, err error
 	return
 }
 
-func (w *wallet) GetWallets() (wallets []types.Wallet) {
+func (w *wallet) Wallets() (wallets []types.Wallet) {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 
@@ -66,7 +66,7 @@ func (w *wallet) GetWallets() (wallets []types.Wallet) {
 
 func (w *wallet) startWalletStreams() {
 
-	wallets, err := w.trader.Provider().GetWallets()
+	wallets, err := w.trader.Provider().Wallets()
 	if err != nil {
 		logrus.WithError(err).Panicf("could not fetch wallets from provider!")
 	}
@@ -74,7 +74,7 @@ func (w *wallet) startWalletStreams() {
 	streams := make(map[internal.Wallet]<-chan types.WalletDTO)
 	for _, dto := range wallets {
 		wallet := wal.New(dto)
-		ch, err := w.trader.Provider().GetWalletStream(w.stop, wallet.Currency().ToDTO())
+		ch, err := w.trader.Provider().WalletStream(w.stop, wallet.Currency().ToDTO())
 
 		if err != nil {
 			logrus.WithError(err).Panicf("could not get update stream for wallet %s", wallet.Currency().Name)

@@ -20,7 +20,7 @@ func main() {
 	trader.Start()
 
 	// Get the wallets
-	wallets := trader.WalletSvc().GetWallets()
+	wallets := trader.WalletSvc().Wallets()
 
 	// Setup a close channel
 	killSwitch := make(chan bool)
@@ -36,7 +36,7 @@ func main() {
 
 	// Wait for the interrupt
 	<-interrupt
-	
+
 	// Let the user know what happened
 	logrus.Warn("Received an interrupt signal! Shutting down!")
 
