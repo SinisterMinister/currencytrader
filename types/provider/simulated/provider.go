@@ -1,6 +1,10 @@
 package simulated
 
-import "github.com/sinisterminister/currencytrader/types"
+import (
+	"time"
+
+	"github.com/sinisterminister/currencytrader/types"
+)
 
 type provider struct {
 }
@@ -48,23 +52,23 @@ func (p *provider) WalletStream(stop <-chan bool, currency types.CurrencyDTO) (s
 	return
 }
 
-func (p *provider) AttemptOrder(mkt types.MarketDTO, ord types.OrderRequestDTO) (types.OrderDTO, error) {
-	return attemptOrder(mkt, ord)
+func (p *provider) AttemptOrder(ord types.OrderRequestDTO) (types.OrderDTO, error) {
+	return attemptOrder(ord.Market, ord)
 }
 
 func (p *provider) CancelOrder(order types.OrderDTO) error {
 	return cancelOrder(order)
 }
 
-func (p *provider) Order(id string) (types.OrderDTO, error) {
-	return getOrder(id)
+func (p *provider) Order(mkt types.MarketDTO, id string) (types.OrderDTO, error) {
+	return getOrder(mkt, id)
 }
 
 func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (ch <-chan types.OrderDTO, err error) {
 	return getOrderStream(stop, order)
 }
 
-func (p *provider) Candles(interval types.CandleInterval, periods int) (candles []types.CandleDTO, err error) {
-	candles = getCandles(periods)
+func (p *provider) Candles(mkt types.MarketDTO, interval types.CandleInterval, start time.Time, end time.Time) (candles []types.CandleDTO, err error) {
+	candles = getCandles(mkt, interval, start, end)
 	return
 }

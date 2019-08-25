@@ -3,6 +3,9 @@ package svc
 import (
 	"sync"
 
+	"github.com/sinisterminister/currencytrader/types/market"
+
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 
 	"github.com/sinisterminister/currencytrader/types"
@@ -25,8 +28,8 @@ func NewOrder(trader internal.Trader) types.OrderSvc {
 	return svc
 }
 
-func (svc *order) Order(id string) (order types.Order, err error) {
-	dto, err := svc.trader.Provider().Order(id)
+func (svc *order) Order(mkt types.Market, id string) (order types.Order, err error) {
+	dto, err := svc.trader.Provider().Order(mkt.ToDTO(), id)
 	if err != nil {
 		return
 	}
@@ -34,8 +37,14 @@ func (svc *order) Order(id string) (order types.Order, err error) {
 	return
 }
 
-func (svc *order) AttemptOrder(mkt types.Market, req types.OrderRequest) (order types.Order, err error) {
-	dto, err := svc.trader.Provider().AttemptOrder(mkt.ToDTO(), req.ToDTO())
+func (svc *order) AttemptOrder(m types.Market, t types.OrderType, s types.OrderSide, price decimal.Decimal, quantity decimal.Decimal) (order types.Order, err error) {
+	dto, err := svc.trader.Provider().AttemptOrder(types.OrderRequestDTO{
+		Market:   m.ToDTO(),
+		Type:     t,
+		Side:     s,
+		Price:    price,
+		Quantity: quantity,
+	})
 	if err != nil {
 		return
 	}
@@ -96,3 +105,36 @@ func (svc *order) Stop() {
 	close(svc.stop)
 	svc.running = sync.Once{}
 }
+
+// Request represents an order to be placed by the provider
+type request struct {
+	trader internal.Trader
+	dto    types.OrderRequestDTO
+}
+
+func NewRequestFromDTO(trader internal.Trader, dto types.OrderRequestDTO) types.OrderRequest {
+	return &request{trader, dto}
+}
+
+func NewRequest(trader internal.Trader, oType types.OrderType, side types.OrderSide, quantity decimal.Decimal, price decimal.Decimal) types.OrderRequest {
+	return &request{trader, types.OrderRequestDTO{
+		Type:     oType,
+		Side:     side,
+		Price:    price,
+		Quantity: quantity,
+	}}
+}
+
+func (r *request) ToDTO() types.OrderRequestDTO {
+	return r.dto
+}
+
+func (r *request) Side() types.OrderSide { return r.dto.Side }
+
+func (r *request) Quantity() decimal.Decimal { return r.dto.Quantity }
+
+func (r *request) Price() decimal.Decimal { return r.dto.Price }
+
+func (r *request) Type() types.OrderType { return r.dto.Type }
+
+func (r *request) Market() types.Market { return market.New(r.trader, r.dto.Market) }

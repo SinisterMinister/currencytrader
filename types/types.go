@@ -47,9 +47,9 @@ type CurrencyDTO struct {
 }
 
 type Market interface {
-	AttemptOrder(side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
+	AttemptOrder(oType OrderType, side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
 	BaseCurrency() Currency
-	Candles(interval CandleInterval, periods int) ([]Candle, error)
+	Candles(interval CandleInterval, start time.Time, end time.Time) ([]Candle, error)
 	MaxPrice() decimal.Decimal
 	MaxQuantity() decimal.Decimal
 	MinPrice() decimal.Decimal
@@ -84,6 +84,7 @@ type Order interface {
 	CreationTime() time.Time
 	Filled() decimal.Decimal
 	ID() string
+	Market() Market
 	Request() OrderRequest
 	Status() OrderStatus
 	StatusStream(stop <-chan bool) <-chan OrderStatus
@@ -91,6 +92,7 @@ type Order interface {
 }
 
 type OrderDTO struct {
+	Market       MarketDTO
 	CreationTime time.Time
 	Filled       decimal.Decimal
 	ID           string
@@ -99,16 +101,20 @@ type OrderDTO struct {
 }
 
 type OrderRequest interface {
+	Market() Market
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
 	Side() OrderSide
 	ToDTO() OrderRequestDTO
+	Type() OrderType
 }
 
 type OrderRequestDTO struct {
 	Price    decimal.Decimal
 	Quantity decimal.Decimal
 	Side     OrderSide
+	Type     OrderType
+	Market   MarketDTO
 }
 
 // Side represents which side the order will be placed
@@ -117,19 +123,21 @@ type OrderSide string
 // Status handles the various statuses the Order can be in
 type OrderStatus string
 
+type OrderType string
+
 type OrderSvc interface {
-	AttemptOrder(market Market, req OrderRequest) (order Order, err error)
+	AttemptOrder(m Market, t OrderType, s OrderSide, price decimal.Decimal, quantity decimal.Decimal) (order Order, err error)
 	CancelOrder(order Order) error
-	Order(id string) (Order, error)
+	Order(m Market, id string) (Order, error)
 }
 
 type Provider interface {
-	AttemptOrder(market MarketDTO, req OrderRequestDTO) (OrderDTO, error)
+	AttemptOrder(req OrderRequestDTO) (OrderDTO, error)
 	CancelOrder(order OrderDTO) error
-	Candles(interval CandleInterval, periods int) ([]CandleDTO, error)
+	Candles(mkt MarketDTO, interval CandleInterval, start time.Time, end time.Time) ([]CandleDTO, error)
 	Currencies() ([]CurrencyDTO, error)
 	Markets() ([]MarketDTO, error)
-	Order(id string) (OrderDTO, error)
+	Order(markest MarketDTO, id string) (OrderDTO, error)
 	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
 	Ticker(market MarketDTO) (TickerDTO, error)
 	TickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)

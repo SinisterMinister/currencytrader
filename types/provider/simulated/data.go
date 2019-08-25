@@ -160,6 +160,7 @@ func getWalletStream(stop <-chan bool, cur types.CurrencyDTO) <-chan types.Walle
 
 func attemptOrder(mk types.MarketDTO, req types.OrderRequestDTO) (types.OrderDTO, error) {
 	order := types.OrderDTO{
+		Market:       mk,
 		CreationTime: time.Now(),
 		Filled:       decimal.Zero,
 		ID:           uuid.New().String(),
@@ -249,7 +250,7 @@ func processOrder(o types.OrderDTO) chan bool {
 	return stop
 }
 
-func getOrder(id string) (types.OrderDTO, error) {
+func getOrder(mkt types.MarketDTO, id string) (types.OrderDTO, error) {
 	order, ok := orders[id]
 
 	if !ok {
@@ -279,10 +280,10 @@ func cancelOrder(o types.OrderDTO) error {
 	return nil
 }
 
-func getCandles(periods int) []types.CandleDTO {
+func getCandles(mkt types.MarketDTO, interval types.CandleInterval, start time.Time, end time.Time) []types.CandleDTO {
 	candles := []types.CandleDTO{}
 
-	for index := 0; index < periods; index++ {
+	for index := 0; index < int(end.Sub(start).Minutes()); index++ {
 		candles = append(candles, types.CandleDTO{})
 	}
 

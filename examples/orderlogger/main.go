@@ -62,7 +62,7 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 	logrus.Infof("ticker for market %s is %s", mkt.Name(), ticker.ToDTO())
 
 	// Place the order
-	buy, err := mkt.AttemptOrder(order.Buy, ticker.Price(), decimal.NewFromFloat(10))
+	buy, err := mkt.AttemptOrder(order.Limit, order.Buy, ticker.Price(), decimal.NewFromFloat(10))
 	if err != nil {
 		// Bail on error
 		logrus.WithError(err).Error("could not place order")

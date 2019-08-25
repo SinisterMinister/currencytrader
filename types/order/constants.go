@@ -14,6 +14,15 @@ const (
 
 	// Filled is for orders that have completely filled
 	Filled types.OrderStatus = "FILLED"
+
+	// Rejected is for orders that been rejected
+	Rejected types.OrderStatus = "REJECTED"
+
+	// Expired is for order that expired
+	Expired types.OrderStatus = "EXPIRED"
+
+	// Unknown is for an order that is of unknown status
+	Unknown types.OrderStatus = "UNKNOWN"
 )
 
 const (
@@ -22,4 +31,12 @@ const (
 
 	// Sell represents a sell sided order
 	Sell types.OrderSide = "SELL"
+)
+
+const (
+	// Market represents a market order
+	Market types.OrderType = "MARKET"
+
+	// Limit represents a limit order
+	Limit types.OrderType = "LIMIT"
 )

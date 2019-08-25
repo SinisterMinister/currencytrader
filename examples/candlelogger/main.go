@@ -83,5 +83,4 @@ func logCandles(stop <-chan bool, mkt types.Market, stream chan<- types.CandleDT
 		case stream <- candle.ToDTO():
 		}
 	}
-
 }

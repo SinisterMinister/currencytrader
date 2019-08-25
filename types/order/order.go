@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sinisterminister/currencytrader/types/market"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/shopspring/decimal"
@@ -40,7 +42,7 @@ func (o *order) ID() string {
 func (o *order) Request() types.OrderRequest {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
-	return NewRequestFromDTO(o.dto.Request)
+	return NewRequestFromDTO(market.New(o.trader, o.dto.Market), o.dto.Request)
 }
 
 func (o *order) Filled() decimal.Decimal {
@@ -53,6 +55,12 @@ func (o *order) Status() types.OrderStatus {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return o.dto.Status
+}
+
+func (o *order) Market() types.Market {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return market.New(o.trader, o.dto.Market)
 }
 
 func (o *order) StatusStream(stop <-chan bool) <-chan types.OrderStatus {

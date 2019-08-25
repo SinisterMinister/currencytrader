@@ -1,12 +1,13 @@
 package market
 
 import (
+	"time"
+
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/candle"
 	"github.com/sinisterminister/currencytrader/types/currency"
 	"github.com/sinisterminister/currencytrader/types/internal"
-	"github.com/sinisterminister/currencytrader/types/order"
 )
 
 // market is where you can trade one currency for another.
@@ -54,9 +55,9 @@ func (m *market) TickerStream(stop <-chan bool) <-chan types.Ticker {
 	return m.trader.TickerSvc().TickerStream(stop, m)
 }
 
-func (m *market) Candles(interval types.CandleInterval, periods int) ([]types.Candle, error) {
+func (m *market) Candles(interval types.CandleInterval, start time.Time, end time.Time) ([]types.Candle, error) {
 	candles := []types.Candle{}
-	dtos, err := m.trader.Provider().Candles(interval, periods)
+	dtos, err := m.trader.Provider().Candles(m.ToDTO(), interval, start, end)
 	if err != nil {
 		return candles, err
 	}
@@ -68,13 +69,6 @@ func (m *market) Candles(interval types.CandleInterval, periods int) ([]types.Ca
 	return candles, nil
 }
 
-func (m *market) AttemptOrder(side types.OrderSide, price decimal.Decimal, quantity decimal.Decimal) (types.Order, error) {
-	req := types.OrderRequestDTO{
-		Side:     side,
-		Price:    price,
-		Quantity: quantity,
-	}
-
-	return m.trader.OrderSvc().AttemptOrder(m, order.NewRequestFromDTO(req))
-
+func (m *market) AttemptOrder(t types.OrderType, s types.OrderSide, p decimal.Decimal, q decimal.Decimal) (types.Order, error) {
+	return m.trader.OrderSvc().AttemptOrder(m, t, s, p, q)
 }
