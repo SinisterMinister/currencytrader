@@ -20,6 +20,7 @@ var (
 	orders      map[string]types.OrderDTO
 	streams     map[string][]chan types.OrderDTO
 	cancelChans map[string]chan bool
+	wallets     map[string]types.WalletDTO
 )
 
 func getCurrencies() []types.CurrencyDTO {
@@ -114,31 +115,34 @@ func getTickerStream(stop <-chan bool, mkt types.MarketDTO) <-chan types.TickerD
 }
 
 func getWallets() []types.WalletDTO {
-	currencies := getCurrencies()
-	wallets := []types.WalletDTO{}
-	for _, cur := range currencies {
-		wallets = append(wallets,
-			types.WalletDTO{
+	if wallets == nil {
+		wallets = make(map[string]types.WalletDTO)
+		currencies := getCurrencies()
+		for _, cur := range currencies {
+			id, _ := uuid.NewUUID()
+			wallets[id.String()] = types.WalletDTO{
+				ID:       id.String(),
 				Currency: cur,
 				Free:     decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
 				Locked:   decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
-			},
-		)
+			}
+		}
 	}
-	return wallets
+
+	wals := []types.WalletDTO{}
+	for _, wal := range wallets {
+		wals = append(wals, wal)
+	}
+	return wals
 }
 
-func getWallet(cur types.CurrencyDTO) types.WalletDTO {
-	return types.WalletDTO{
-		Currency: cur,
-		Free:     decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
-		Locked:   decimal.NewFromFloat((rand.Float64() / 2) * float64(rand.Intn(100))).Round(int32(cur.Precision)),
-	}
+func getWallet(id string) types.WalletDTO {
+	return wallets[id]
 }
 
-func getWalletStream(stop <-chan bool, cur types.CurrencyDTO) <-chan types.WalletDTO {
+func getWalletStream(stop <-chan bool, wal types.WalletDTO) <-chan types.WalletDTO {
 	ch := make(chan types.WalletDTO)
-	go func(stop <-chan bool, cur types.CurrencyDTO, ch chan types.WalletDTO) {
+	go func(stop <-chan bool, wal types.WalletDTO, ch chan types.WalletDTO) {
 		ticker := time.NewTicker(1 * time.Second)
 		for {
 			select {
@@ -151,10 +155,10 @@ func getWalletStream(stop <-chan bool, cur types.CurrencyDTO) <-chan types.Walle
 			case <-stop:
 				return
 			case <-ticker.C:
-				ch <- getWallet(cur)
+				ch <- getWallet(wal.ID)
 			}
 		}
-	}(stop, cur, ch)
+	}(stop, wal, ch)
 	return ch
 }
 
