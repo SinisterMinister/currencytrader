@@ -38,6 +38,11 @@ func (w *wallet) Free() decimal.Decimal {
 	return w.dto.Free
 }
 
+func (w *wallet) ID() string {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	return w.dto.ID
+}
 func (w *wallet) Locked() decimal.Decimal {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()

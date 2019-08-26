@@ -1,6 +1,9 @@
 package currency
 
-import "github.com/sinisterminister/currencytrader/types"
+import (
+	"github.com/shopspring/decimal"
+	"github.com/sinisterminister/currencytrader/types"
+)
 
 // Currency TODO
 type currency struct {
@@ -10,6 +13,8 @@ type currency struct {
 func New(cur types.CurrencyDTO) types.Currency {
 	return &currency{cur}
 }
+
+func (c *currency) Increment() decimal.Decimal { return c.dto.Increment }
 
 func (c *currency) Name() string { return c.dto.Name }
 

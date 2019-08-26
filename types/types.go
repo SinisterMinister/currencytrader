@@ -36,11 +36,13 @@ type CandleInterval string
 type Currency interface {
 	Name() string
 	Precision() int
+	Increment() decimal.Decimal
 	Symbol() string
 	ToDTO() CurrencyDTO
 }
 
 type CurrencyDTO struct {
+	Increment decimal.Decimal
 	Name      string
 	Precision int
 	Symbol    string
@@ -141,9 +143,9 @@ type Provider interface {
 	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
 	Ticker(market MarketDTO) (TickerDTO, error)
 	TickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
-	Wallet(currency CurrencyDTO) (WalletDTO, error)
+	Wallet(id string) (WalletDTO, error)
 	Wallets() ([]WalletDTO, error)
-	WalletStream(stop <-chan bool, currency CurrencyDTO) (<-chan WalletDTO, error)
+	WalletStream(stop <-chan bool, wal WalletDTO) (<-chan WalletDTO, error)
 }
 
 type Trader interface {
@@ -183,6 +185,7 @@ type Wallet interface {
 	Available() decimal.Decimal
 	Currency() Currency
 	Free() decimal.Decimal
+	ID() string
 	Locked() decimal.Decimal
 	Release(amt decimal.Decimal) error
 	Reserve(amt decimal.Decimal) error
@@ -194,6 +197,7 @@ type Wallet interface {
 type WalletDTO struct {
 	Currency CurrencyDTO
 	Free     decimal.Decimal
+	ID       string
 	Locked   decimal.Decimal
 	Reserved decimal.Decimal
 }

@@ -74,7 +74,7 @@ func (w *wallet) startWalletStreams() {
 	streams := make(map[internal.Wallet]<-chan types.WalletDTO)
 	for _, dto := range wallets {
 		wallet := wal.New(dto)
-		ch, err := w.trader.Provider().WalletStream(w.stop, wallet.Currency().ToDTO())
+		ch, err := w.trader.Provider().WalletStream(w.stop, wallet.ToDTO())
 
 		if err != nil {
 			logrus.WithError(err).Panicf("could not get update stream for wallet %s", wallet.Currency().Name)
