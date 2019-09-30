@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-playground/log"
-	"github.com/sinisterminister/currencytrader/types/order"
 	"golang.org/x/text/currency"
 
 	"github.com/shopspring/decimal"
@@ -16,11 +15,13 @@ import (
 )
 
 type provider struct {
-	trader types.Trader
+	trader    types.Trader
+	streamSvc *streamSvc
 
-	mutex      sync.Mutex
-	client     *coinbasepro.Client
-	currencies map[string]types.CurrencyDTO
+	mutex         sync.Mutex
+	client        *coinbasepro.Client
+	currencies    map[string]types.CurrencyDTO
+	socketStreams map[string]chan interface{}
 }
 
 func New(trader types.Trader, client *coinbasepro.Client) types.Provider {
@@ -159,7 +160,7 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 }
 
 func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
-	return
+	return p.streamSvc.OrderStream(stop, order)
 }
 
 func (p *provider) Ticker(market types.MarketDTO) (tkr types.TickerDTO, err error) {
@@ -178,7 +179,7 @@ func (p *provider) Ticker(market types.MarketDTO) (tkr types.TickerDTO, err erro
 }
 
 func (p *provider) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
-	return
+	return p.streamSvc.TickerStream(stop, market)
 }
 
 func (p *provider) Wallet(id string) (wal types.WalletDTO, err error) {
@@ -212,6 +213,7 @@ func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
 	return
 }
 
+// TODO: refactor to not make a request every second for every wallet. Maybe use all wallets call instead so it's only 1 call a sec
 func (p *provider) WalletStream(stop <-chan bool, wal types.WalletDTO) (stream <-chan types.WalletDTO, err error) {
 	// Make sure the wallet exists
 	_, err = p.Wallet(wal.ID)
@@ -267,42 +269,4 @@ func (p *provider) getCurrency(symbol string) (c types.CurrencyDTO) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	return p.currencies[symbol]
-}
-
-func getStatus(ord coinbasepro.Order) types.OrderStatus {
-	filled, _ := decimal.NewFromString(ord.FilledSize)
-	switch ord.Status {
-	case "received":
-		return order.Pending
-	case "open":
-		if filled.IsZero() {
-			return order.Pending
-		}
-		return order.Partial
-	case "done":
-		if ord.DoneReason == "filled" {
-			return order.Filled
-		}
-		return order.Canceled
-	}
-
-	return order.Unknown
-}
-
-func getType(ord coinbasepro.Order) types.OrderType {
-	switch ord.Type {
-	case "limit":
-		return order.Limit
-	case "market":
-	}
-	return order.Market
-}
-
-func getSide(ord coinbasepro.Order) types.OrderSide {
-	switch ord.Type {
-	case "buy":
-		return order.Buy
-	case "sell":
-	}
-	return order.Sell
 }

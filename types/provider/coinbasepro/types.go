@@ -18,11 +18,34 @@ type Heartbeat struct {
 	Time        time.Time `json:"time"`
 }
 
+type AuthenticatedSubscribe struct {
+	Signature  string `json:"signature,omitempty"`
+	Key        string `json:"key,omitempty"`
+	Passphrase string `json:"passphrase,omitempty"`
+	Timestamp  string `json:"timestamp,omitempty"`
+}
+
+type GlobalSubscribe struct {
+	Message
+	AuthenticatedSubscribe
+	ProductIDs []string `json:"product_ids"`
+	Channels   []string `json:"channels"`
+}
+
 type Subscribe struct {
 	Message
+	AuthenticatedSubscribe
 	Channels []struct {
-		Name       string
-		ProductIDs []string
+		Name       string   `json:"name"`
+		ProductIDs []string `json:"product_ids"`
+	} `json:"channels"`
+}
+
+type Subscriptions struct {
+	Message
+	Channels []struct {
+		Name       string   `json:"name"`
+		ProductIDs []string `json:"product_ids"`
 	} `json:"channels"`
 }
 
