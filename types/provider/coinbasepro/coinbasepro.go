@@ -6,16 +6,14 @@ import (
 	"time"
 
 	"github.com/go-playground/log"
-	"golang.org/x/text/currency"
 
 	"github.com/shopspring/decimal"
 
-	"github.com/preichenberger/go-coinbasepro"
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/go-coinbasepro"
 )
 
 type provider struct {
-	trader    types.Trader
 	streamSvc *streamSvc
 
 	mutex         sync.Mutex
@@ -24,12 +22,19 @@ type provider struct {
 	socketStreams map[string]chan interface{}
 }
 
-func New(trader types.Trader, client *coinbasepro.Client) types.Provider {
+func New(client *coinbasepro.Client) types.Provider {
+	// Instantiate websocket handler
+	wsh := newWebSocketHandler(client)
+
+	// Instantiate stream service
+	svc := newStreamService(wsh)
 	provider := &provider{
-		trader:     trader,
 		client:     client,
 		currencies: make(map[string]types.CurrencyDTO),
+		streamSvc:  svc,
 	}
+
+	provider.refreshCaches()
 
 	return provider
 }
@@ -208,6 +213,7 @@ func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
 			Currency: p.getCurrency(acct.Currency),
 			Free:     decimal.RequireFromString(acct.Available),
 			Locked:   decimal.RequireFromString(acct.Hold),
+			ID:       acct.ID,
 		})
 	}
 	return
@@ -243,7 +249,7 @@ func (p *provider) WalletStream(stop <-chan bool, wal types.WalletDTO) (stream <
 				select {
 				case stream <- dto:
 				default:
-					log.Warnf("skipping blocked stream for wallet %s", currency.Symbol)
+					log.Warnf("skipping blocked stream for wallet %s", wal.ID)
 				}
 			}
 		}

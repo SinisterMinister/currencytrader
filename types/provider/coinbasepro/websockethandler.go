@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-playground/log"
 	ws "github.com/gorilla/websocket"
-	"github.com/preichenberger/go-coinbasepro"
+	"github.com/sinisterminister/go-coinbasepro"
 )
 
 type websocketHandler struct {
@@ -15,6 +15,16 @@ type websocketHandler struct {
 	subscriptions Subscriptions
 	streams       map[<-chan bool]chan interface{}
 	connection    *ws.Conn
+}
+
+func newWebSocketHandler(client *coinbasepro.Client) *websocketHandler {
+	handler := &websocketHandler{
+		client:  client,
+		streams: make(map[<-chan bool]chan interface{}),
+	}
+	go handler.handleConnection()
+
+	return handler
 }
 
 func (h *websocketHandler) Subscriptions() Subscriptions {

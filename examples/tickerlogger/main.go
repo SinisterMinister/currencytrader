@@ -6,13 +6,21 @@ import (
 
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
-	"github.com/sinisterminister/currencytrader/types/provider/simulated"
+	"github.com/sinisterminister/currencytrader/types/provider/coinbasepro"
+	coinbase "github.com/sinisterminister/go-coinbasepro"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	// Start up the simulated provider
-	provider := simulated.New(simulated.ProviderConfig{})
+	// Setup a coinbase client
+	client := coinbase.NewClient()
+	client.UpdateConfig(&coinbase.ClientConfig{
+		Key:        "f561da92e7e431717e01b81339a92240",
+		Passphrase: "throwback",
+		Secret:     "YY7CvMVlA1/Ld9joXidr1brEc2xn9MOIacGijym7md3yv6heK9Z52IDFD7rhY3fwQvNaamZX8KcVHvAjnTpMng==",
+	})
+	// Start up a coinbase provider
+	provider := coinbasepro.New(client)
 
 	// Get an instance of the trader
 	trader := currencytrader.New(provider)

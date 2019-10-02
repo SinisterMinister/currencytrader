@@ -6,6 +6,7 @@ import (
 
 	wal "github.com/sinisterminister/currencytrader/types/wallet"
 
+	"github.com/go-playground/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/sinisterminister/currencytrader/types"
@@ -68,7 +69,7 @@ func (w *wallet) startWalletStreams() {
 
 	wallets, err := w.trader.Provider().Wallets()
 	if err != nil {
-		logrus.WithError(err).Panicf("could not fetch wallets from provider!")
+		log.WithError(err).Fatal("could not fetch wallets from provider!")
 	}
 
 	streams := make(map[internal.Wallet]<-chan types.WalletDTO)

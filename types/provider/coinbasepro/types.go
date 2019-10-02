@@ -7,7 +7,7 @@ import (
 )
 
 type Message struct {
-	Type string `json="type"`
+	Type string `json:"type"`
 }
 
 type Heartbeat struct {
