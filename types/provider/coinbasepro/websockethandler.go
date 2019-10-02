@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-playground/log"
 	ws "github.com/gorilla/websocket"
-	"github.com/sinisterminister/go-coinbasepro"
+	"github.com/preichenberger/go-coinbasepro"
 )
 
 type websocketHandler struct {

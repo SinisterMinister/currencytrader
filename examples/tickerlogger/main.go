@@ -4,10 +4,10 @@ import (
 	"os"
 	"os/signal"
 
+	coinbase "github.com/preichenberger/go-coinbasepro"
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/coinbasepro"
-	coinbase "github.com/sinisterminister/go-coinbasepro"
 	"github.com/sirupsen/logrus"
 )
 

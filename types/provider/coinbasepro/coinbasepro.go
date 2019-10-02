@@ -9,8 +9,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/preichenberger/go-coinbasepro"
 	"github.com/sinisterminister/currencytrader/types"
-	"github.com/sinisterminister/go-coinbasepro"
 )
 
 type provider struct {
