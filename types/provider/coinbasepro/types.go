@@ -10,6 +10,11 @@ type Message struct {
 	Type string `json:"type"`
 }
 
+type DataPackage struct {
+	Message
+	Data []byte
+}
+
 type Heartbeat struct {
 	Message
 	Sequence    int       `json:"sequence"`

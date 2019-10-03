@@ -4,12 +4,12 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/go-playground/log"
 	"github.com/sinisterminister/currencytrader/types/candle"
 
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/simulated"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 	<-interrupt
 
 	// Let the user know what happened
-	logrus.Warn("Received an interrupt signal! Shutting down!")
+	log.Warn("Received an interrupt signal! Shutting down!")
 
 	// Kill the streams
 	close(killSwitch)
@@ -60,7 +60,7 @@ func candleLogger(stop <-chan bool, stream chan types.CandleDTO) {
 		case <-stop:
 			return
 		case candle := <-stream:
-			logrus.Infof("candle data is %s", candle)
+			log.Infof("candle data is %s", candle)
 		}
 	}
 }
@@ -71,7 +71,7 @@ func logCandles(stop <-chan bool, mkt types.Market, stream chan<- types.CandleDT
 
 	// Bail on error
 	if err != nil {
-		logrus.WithError(err).Error("could not get candles")
+		log.WithError(err).Error("could not get candles")
 		return
 	}
 

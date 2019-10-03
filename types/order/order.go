@@ -4,9 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/log"
 	"github.com/sinisterminister/currencytrader/types/market"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
@@ -125,7 +124,7 @@ func (o *order) broadcastToStreams(status types.OrderStatus) {
 			}
 		default:
 			// skip blocked channels
-			logrus.Warnf("skipping blocked order status channel for order %s", o.ID())
+			log.Warnf("skipping blocked order status channel for order %s", o.ID())
 		}
 		streams = append(streams, stream)
 	}

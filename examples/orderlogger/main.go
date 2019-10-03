@@ -4,13 +4,13 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/go-playground/log"
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types/order"
 
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/simulated"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 	<-interrupt
 
 	// Let the user know what happened
-	logrus.Warn("Received an interrupt signal! Shutting down!")
+	log.Warn("Received an interrupt signal! Shutting down!")
 
 	// Kill the streams
 	close(killSwitch)
@@ -55,17 +55,17 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 
 	// Bail on error
 	if err != nil {
-		logrus.WithError(err).Error("could not get ticker")
+		log.WithError(err).Error("could not get ticker")
 		return
 	}
 
-	logrus.Infof("ticker for market %s is %s", mkt.Name(), ticker.ToDTO())
+	log.Infof("ticker for market %s is %s", mkt.Name(), ticker.ToDTO())
 
 	// Place the order
 	buy, err := mkt.AttemptOrder(order.Limit, order.Buy, ticker.Price(), decimal.NewFromFloat(10))
 	if err != nil {
 		// Bail on error
-		logrus.WithError(err).Error("could not place order")
+		log.WithError(err).Error("could not place order")
 		return
 	}
 
@@ -74,8 +74,8 @@ func placeOrders(stop <-chan bool, mkt types.Market) {
 
 	// Watch the stream for the order status
 	for status := range stream {
-		logrus.Infof("order %s status %s", buy.ID(), status)
+		log.Infof("order %s status %s", buy.ID(), status)
 	}
 
-	logrus.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
+	log.Infof("order %s finished with a status of %s", buy.ID(), buy.Status())
 }

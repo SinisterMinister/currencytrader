@@ -1,6 +1,7 @@
 package coinbasepro
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/go-playground/log"
@@ -13,14 +14,14 @@ type websocketHandler struct {
 
 	mutex         sync.Mutex
 	subscriptions Subscriptions
-	streams       map[<-chan bool]chan interface{}
+	streams       map[<-chan bool]chan DataPackage
 	connection    *ws.Conn
 }
 
 func newWebSocketHandler(client *coinbasepro.Client) *websocketHandler {
 	handler := &websocketHandler{
 		client:  client,
-		streams: make(map[<-chan bool]chan interface{}),
+		streams: make(map[<-chan bool]chan DataPackage),
 	}
 	go handler.handleConnection()
 
@@ -47,9 +48,9 @@ func (h *websocketHandler) Unsubscribe(req Subscribe) (err error) {
 	return h.processSub(req)
 }
 
-func (h *websocketHandler) GetStream(stop <-chan bool) (stream <-chan interface{}) {
+func (h *websocketHandler) GetStream(stop <-chan bool) (stream <-chan DataPackage) {
 	// First, create the channel
-	rawStream := make(chan interface{})
+	rawStream := make(chan DataPackage, 1024)
 	stream = rawStream
 
 	// Add the stream to the collection
@@ -75,7 +76,7 @@ func (h *websocketHandler) processSub(sub Subscribe) (err error) {
 	return
 }
 
-func (h *websocketHandler) addStream(stop <-chan bool, stream chan interface{}) {
+func (h *websocketHandler) addStream(stop <-chan bool, stream chan DataPackage) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -146,6 +147,34 @@ func (h *websocketHandler) readConnection() (err error) {
 }
 
 func (h *websocketHandler) sendToStreams(data []byte) {
+	var (
+		pkg  DataPackage
+		msg  Message
+		subs Subscriptions
+	)
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		log.Error("wshandler: recieved malformed data from stream")
+		return
+	}
+
+	// Capture subscription responses
+	if msg.Type == "subscriptions" {
+		e := json.Unmarshal(data, &subs)
+		if e != nil {
+			log.Error("could not parse subscriptions!")
+		}
+
+		// Update the subscriptions
+		h.mutex.Lock()
+		h.subscriptions = subs
+		h.mutex.Unlock()
+
+		return
+	}
+	pkg.Message = msg
+	pkg.Data = data
+
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -153,11 +182,11 @@ func (h *websocketHandler) sendToStreams(data []byte) {
 	for _, stream := range h.streams {
 		select {
 		// Send the data to the stream
-		case stream <- data:
+		case stream <- pkg:
 
 		// Skip the stream if it is blocked
 		default:
-			log.Warn("skipping blocked stream")
+			log.WithField("type", pkg.Type).WithField("data", string(pkg.Data)).Warn("wshandler: skipping blocked stream")
 		}
 	}
 }

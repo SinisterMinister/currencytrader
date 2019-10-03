@@ -4,14 +4,17 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/go-playground/log"
 	coinbase "github.com/preichenberger/go-coinbasepro"
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/coinbasepro"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	// Setup a close channel
+	killSwitch := make(chan bool)
+
 	// Setup a coinbase client
 	client := coinbase.NewClient()
 	client.UpdateConfig(&coinbase.ClientConfig{
@@ -20,7 +23,7 @@ func main() {
 		Secret:     "YY7CvMVlA1/Ld9joXidr1brEc2xn9MOIacGijym7md3yv6heK9Z52IDFD7rhY3fwQvNaamZX8KcVHvAjnTpMng==",
 	})
 	// Start up a coinbase provider
-	provider := coinbasepro.New(client)
+	provider := coinbasepro.New(killSwitch, client)
 
 	// Get an instance of the trader
 	trader := currencytrader.New(provider)
@@ -28,9 +31,6 @@ func main() {
 
 	// Get the available markets
 	markets := trader.MarketSvc().Markets()
-
-	// Setup a close channel
-	killSwitch := make(chan bool)
 
 	// Stream the tickers to output log
 	for _, mkt := range markets {
@@ -45,7 +45,7 @@ func main() {
 	<-interrupt
 
 	// Let the user know what happened
-	logrus.Warn("Received an interrupt signal! Shutting down!")
+	log.Warn("Received an interrupt signal! Shutting down!")
 
 	// Kill the streams
 	close(killSwitch)
@@ -75,7 +75,7 @@ func streamTicker(stop <-chan bool, market types.Market) {
 		// Data received
 		case data := <-stream:
 			if data != nil {
-				logrus.WithField("data", data.ToDTO()).Infof("stream data recieved for %s market", market.Name())
+				log.WithField("data", data.ToDTO()).Infof("stream data recieved for %s market", market.Name())
 			}
 		}
 	}

@@ -6,8 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/go-playground/log"
 	"github.com/google/uuid"
 	"github.com/sinisterminister/currencytrader/types/order"
 
@@ -210,7 +209,7 @@ func updateOrder(o types.OrderDTO) {
 			select {
 			case ch <- o:
 			default:
-				logrus.Warn("skipping blocked order update channel")
+				log.Warn("skipping blocked order update channel")
 			}
 		}
 	}

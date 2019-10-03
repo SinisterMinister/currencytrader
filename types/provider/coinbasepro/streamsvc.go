@@ -1,6 +1,7 @@
 package coinbasepro
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/go-playground/log"
@@ -12,18 +13,26 @@ type streamSvc struct {
 	wsHandler *websocketHandler
 
 	mutex         sync.Mutex
+	stop          <-chan bool
+	wsStream      <-chan DataPackage
 	orderStreams  map[types.OrderDTO]chan types.OrderDTO
 	tickerStreams map[types.MarketDTO]chan types.TickerDTO
 	walletStreams map[types.WalletDTO]chan types.WalletDTO
 }
 
-func newStreamService(wsh *websocketHandler) *streamSvc {
-	return &streamSvc{
+func newStreamService(stop <-chan bool, wsh *websocketHandler) *streamSvc {
+	svc := &streamSvc{
+		stop:          stop,
 		wsHandler:     wsh,
+		wsStream:      wsh.GetStream(stop),
 		orderStreams:  make(map[types.OrderDTO]chan types.OrderDTO),
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
 		walletStreams: make(map[types.WalletDTO]chan types.WalletDTO),
 	}
+
+	go svc.streamSink()
+
+	return svc
 }
 
 func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
@@ -66,8 +75,10 @@ func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (st
 	go func() {
 		select {
 		case <-stop:
+			svc.mutex.Lock()
 			delete(svc.tickerStreams, market)
 			svc.updateWebsocketSubscriptions()
+			svc.mutex.Unlock()
 		}
 	}()
 
@@ -169,4 +180,68 @@ func (svc *streamSvc) subscribe(channel string, productId string) {
 		},
 	}}
 	svc.wsHandler.Subscribe(req)
+}
+
+func (svc *streamSvc) streamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case pkg := <-svc.wsStream:
+			select {
+			case <-svc.stop:
+				return
+			default:
+			}
+			switch pkg.Type {
+			case "ticker":
+				svc.broadcastTicker(pkg)
+			default:
+				log.WithField("type", pkg.Type).Error("unexpected message")
+			}
+		}
+	}
+}
+
+func (svc *streamSvc) broadcastOrder(data interface{}) {
+
+}
+
+func (svc *streamSvc) broadcastTicker(data DataPackage) {
+	var ticker Ticker
+	err := json.Unmarshal(data.Data, &ticker)
+	if err != nil {
+		log.WithError(err).Error("could not unmarshal ticker")
+	}
+	payload := types.TickerDTO{
+		Ask:       ticker.BestAsk,
+		Bid:       ticker.BestBid,
+		Price:     ticker.Price,
+		Quantity:  ticker.LastSize,
+		Timestamp: ticker.Time,
+	}
+
+	// Copy the map
+	streams := make(map[types.MarketDTO]chan types.TickerDTO)
+	svc.mutex.Lock()
+	for market, stream := range svc.tickerStreams {
+		streams[market] = stream
+	}
+	svc.mutex.Unlock()
+
+	for market, stream := range streams {
+		if market.Name == ticker.ProductID {
+			svc.mutex.Lock()
+			select {
+			case stream <- payload:
+			default:
+				log.Warn("ticker: skipping blocked stream")
+			}
+			svc.mutex.Unlock()
+		}
+	}
+}
+
+func (svc *streamSvc) broadcastWallet(data interface{}) {
+
 }

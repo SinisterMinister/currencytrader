@@ -3,10 +3,10 @@ package svc
 import (
 	"sync"
 
+	"github.com/go-playground/log"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/ticker"
-	"github.com/sirupsen/logrus"
 )
 
 type Ticker struct {
@@ -147,7 +147,7 @@ func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 	}
 	go func(wrapper *sourceWrapper) {
 		if err != nil {
-			logrus.WithError(err).Errorf("Could not get stream for market %s", wrapper.market.Name())
+			log.WithError(err).Errorf("Could not get stream for market %s", wrapper.market.Name())
 			return
 		}
 		for {
@@ -184,17 +184,19 @@ func (t *Ticker) broadcastToStreams(market types.Market, data types.Ticker) {
 		select {
 		case wrapper.stream <- data:
 		default:
-			logrus.Warn("Skipping blocked ticker channel")
+			log.Warn("Skipping blocked ticker channel")
 		}
 	}
 }
 
 func (t *Ticker) shutdownStreams() {
+	t.mutex.Lock()
 	for market, wrapper := range t.sources {
 		// Close the stream
 		close(wrapper.stop)
 		delete(t.sources, market)
 	}
+	t.mutex.Unlock()
 }
 
 func (t *Ticker) Start() {

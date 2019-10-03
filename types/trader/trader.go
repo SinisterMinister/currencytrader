@@ -48,7 +48,7 @@ func (t *trader) Stop() {
 func (t *trader) startServices() {
 	if !t.running {
 		t.tickerSvc.Start()
-		t.walletSvc.Start()
+		// t.walletSvc.Start()
 
 		t.running = true
 	}
@@ -57,7 +57,7 @@ func (t *trader) startServices() {
 func (t *trader) stopServices() {
 	if t.running {
 		t.tickerSvc.Stop()
-		t.walletSvc.Start()
+		// t.walletSvc.Start()
 
 		t.running = false
 	}

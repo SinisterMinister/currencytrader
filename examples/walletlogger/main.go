@@ -5,10 +5,10 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/go-playground/log"
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/simulated"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	<-interrupt
 
 	// Let the user know what happened
-	logrus.Warn("Received an interrupt signal! Shutting down!")
+	log.Warn("Received an interrupt signal! Shutting down!")
 
 	// Kill the streams
 	close(killSwitch)
@@ -65,7 +65,7 @@ func logWallet(stop <-chan bool, wal types.Wallet) {
 
 		// Data received
 		case <-ticker.C:
-			logrus.WithField("wallet", wal.ToDTO()).Infof("wallet data for for %s", wal.Currency().Name())
+			log.WithField("wallet", wal.ToDTO()).Infof("wallet data for for %s", wal.Currency().Name())
 		}
 	}
 }

@@ -5,12 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/market"
-
-	"github.com/sirupsen/logrus"
 )
 
 // Market service
@@ -68,7 +67,7 @@ func (m *Market) updateMarkets() {
 
 	rawMarkets, err := m.trader.Provider().Markets()
 	if err != nil {
-		logrus.WithError(err).Error("Could not get markets from provider!")
+		log.WithError(err).Error("Could not get markets from provider!")
 	}
 	markets := make([]types.Market, 0, len(rawMarkets))
 	for _, dto := range rawMarkets {

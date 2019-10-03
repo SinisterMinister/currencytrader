@@ -7,7 +7,6 @@ import (
 	wal "github.com/sinisterminister/currencytrader/types/wallet"
 
 	"github.com/go-playground/log"
-	"github.com/sirupsen/logrus"
 
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
@@ -78,7 +77,7 @@ func (w *wallet) startWalletStreams() {
 		ch, err := w.trader.Provider().WalletStream(w.stop, wallet.ToDTO())
 
 		if err != nil {
-			logrus.WithError(err).Panicf("could not get update stream for wallet %s", wallet.Currency().Name)
+			log.WithError(err).Panicf("could not get update stream for wallet %s", wallet.Currency().Name)
 		}
 		streams[wallet] = ch
 	}

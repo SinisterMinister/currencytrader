@@ -22,12 +22,12 @@ type provider struct {
 	socketStreams map[string]chan interface{}
 }
 
-func New(client *coinbasepro.Client) types.Provider {
+func New(stop <-chan bool, client *coinbasepro.Client) types.Provider {
 	// Instantiate websocket handler
 	wsh := newWebSocketHandler(client)
 
 	// Instantiate stream service
-	svc := newStreamService(wsh)
+	svc := newStreamService(stop, wsh)
 	provider := &provider{
 		client:     client,
 		currencies: make(map[string]types.CurrencyDTO),

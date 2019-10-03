@@ -3,10 +3,10 @@ package svc
 import (
 	"sync"
 
+	"github.com/go-playground/log"
 	"github.com/sinisterminister/currencytrader/types/market"
 
 	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
@@ -70,7 +70,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 
 	stream, err := svc.trader.Provider().OrderStream(svc.stop, o.ToDTO())
 	if err != nil {
-		logrus.WithError(err).Errorf("could not get order stream for order %s", o.ID())
+		log.WithError(err).Errorf("could not get order stream for order %s", o.ID())
 	}
 
 	for {
