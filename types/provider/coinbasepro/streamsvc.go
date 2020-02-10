@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/thoas/go-funk"
 )

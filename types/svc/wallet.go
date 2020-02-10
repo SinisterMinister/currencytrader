@@ -6,7 +6,7 @@ import (
 
 	wal "github.com/sinisterminister/currencytrader/types/wallet"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"

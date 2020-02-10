@@ -1,13 +1,13 @@
 package coinbasepro
 
 import (
-	coinbasepro "github.com/preichenberger/go-coinbasepro"
+	cbp "github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/order"
 )
 
-func getStatus(ord coinbasepro.Order) types.OrderStatus {
+func getStatus(ord cbp.Order) types.OrderStatus {
 	filled, _ := decimal.NewFromString(ord.FilledSize)
 	switch ord.Status {
 	case "received":
@@ -27,7 +27,7 @@ func getStatus(ord coinbasepro.Order) types.OrderStatus {
 	return order.Unknown
 }
 
-func getType(ord coinbasepro.Order) types.OrderType {
+func getType(ord cbp.Order) types.OrderType {
 	switch ord.Type {
 	case "limit":
 		return order.Limit
@@ -36,7 +36,7 @@ func getType(ord coinbasepro.Order) types.OrderType {
 	return order.Market
 }
 
-func getSide(ord coinbasepro.Order) types.OrderSide {
+func getSide(ord cbp.Order) types.OrderSide {
 	switch ord.Type {
 	case "buy":
 		return order.Buy

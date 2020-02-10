@@ -10,7 +10,7 @@ import (
 
 	"github.com/sinisterminister/currencytrader/types/candle"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/coinfactory"
 	api "github.com/sinisterminister/coinfactory/pkg/binance"

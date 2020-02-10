@@ -4,8 +4,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/go-playground/log"
-	coinbase "github.com/preichenberger/go-coinbasepro"
+	"github.com/go-playground/log/v7"
+	coinbase "github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/coinbasepro"

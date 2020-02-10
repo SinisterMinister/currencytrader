@@ -3,7 +3,7 @@ package svc
 import (
 	"sync"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/ticker"
@@ -20,8 +20,10 @@ type Ticker struct {
 
 type streamWrapper struct {
 	market types.Market
-	stream chan types.Ticker
 	stop   <-chan bool
+
+	mutex  sync.Mutex
+	stream chan types.Ticker
 }
 
 type sourceWrapper struct {
@@ -104,7 +106,9 @@ func (t *Ticker) deregisterStream(wrapper *streamWrapper) {
 			select {
 			case <-c.stream:
 			default:
+				c.mutex.Lock()
 				close(c.stream)
+				c.mutex.Unlock()
 			}
 		}
 	}
@@ -175,17 +179,21 @@ func (t *Ticker) handleSource(mkt types.Market) *sourceWrapper {
 func (t *Ticker) broadcastToStreams(market types.Market, data types.Ticker) {
 	t.mutex.RLock()
 	streams, ok := t.streams[market]
-	t.mutex.RUnlock()
+
 	if !ok {
 		// No streams to broadcast to
 		return
 	}
+	streams = append([]*streamWrapper{}, streams...)
+	t.mutex.RUnlock()
 	for _, wrapper := range streams {
+		wrapper.mutex.Lock()
 		select {
 		case wrapper.stream <- data:
 		default:
 			log.Warn("Skipping blocked ticker channel")
 		}
+		wrapper.mutex.Unlock()
 	}
 }
 

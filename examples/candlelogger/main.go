@@ -4,7 +4,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
+
 	"github.com/sinisterminister/currencytrader/types/candle"
 
 	"github.com/sinisterminister/currencytrader"

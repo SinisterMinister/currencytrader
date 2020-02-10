@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 	ws "github.com/gorilla/websocket"
-	"github.com/preichenberger/go-coinbasepro"
+	"github.com/preichenberger/go-coinbasepro/v2"
 )
 
 type websocketHandler struct {

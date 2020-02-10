@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 	"github.com/google/go-cmp/cmp"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"

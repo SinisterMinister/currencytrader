@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-playground/log"
+	"github.com/go-playground/log/v7"
 
 	"github.com/shopspring/decimal"
 
-	"github.com/preichenberger/go-coinbasepro"
+	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/sinisterminister/currencytrader/types"
 )
 
