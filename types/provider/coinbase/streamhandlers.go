@@ -103,3 +103,52 @@ func (h *orderReceivedHandler) process(stop <-chan bool) {
 		}
 	}
 }
+
+type orderOpenHandler struct {
+	input  chan DataPackage
+	output chan Open
+
+	log log.Entry
+}
+
+func newOrderOpenHandler(stop <-chan bool) *orderOpenHandler {
+	handler := &orderOpenHandler{
+		input:  make(chan DataPackage),
+		output: make(chan Open),
+		log:    log.WithField("source", "coinbase.orderOpenHandler"),
+	}
+
+	go handler.process(stop)
+
+	return handler
+}
+
+func (h *orderOpenHandler) Input() chan<- DataPackage {
+	return h.input
+}
+
+func (h *orderOpenHandler) Output() <-chan Open {
+	return h.output
+}
+
+func (h *orderOpenHandler) process(stop <-chan bool) {
+	h.log.Debug("starting order open handler")
+	for {
+		select {
+		case <-stop:
+			// Time to stop
+			h.log.Debug("stopping order open handler")
+			return
+		case pkg := <-h.input:
+			// Process data
+			var order Open
+			h.log.Debug("parsing order open data")
+			if err := json.Unmarshal(pkg.Data, &order); err != nil {
+				h.log.WithError(err).Error("could not parse order open data")
+			}
+
+			h.log.Debug("sending order open data")
+			h.output <- order
+		}
+	}
+}

@@ -15,6 +15,7 @@ type streamSvc struct {
 	wsSvc                *websocketSvc
 	tickerHandler        *tickerHandler
 	orderReceivedHandler *orderReceivedHandler
+	orderOpenHandler     *orderOpenHandler
 	stop                 <-chan bool
 
 	orderMtx     sync.RWMutex
@@ -35,9 +36,11 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 
 	svc.registerTickerHandler()
 	svc.registerOrderReceivedHandler()
+	svc.registerOrderOpenHandler()
 
 	go svc.tickerStreamSink()
 	go svc.orderReceivedStreamSink()
+	go svc.orderOpenStreamSink()
 
 	return
 }
@@ -50,6 +53,11 @@ func (svc *streamSvc) registerTickerHandler() {
 func (svc *streamSvc) registerOrderReceivedHandler() {
 	svc.orderReceivedHandler = newOrderReceivedHandler(svc.stop)
 	svc.wsSvc.RegisterMessageHandler("received", svc.orderReceivedHandler)
+}
+
+func (svc *streamSvc) registerOrderOpenHandler() {
+	svc.orderOpenHandler = newOrderOpenHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler("open", svc.orderOpenHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
@@ -251,6 +259,37 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 						ID:           order.ID,
 						Request:      order.Request,
 						Status:       ord.Pending,
+					}
+				}
+			}
+			svc.orderMtx.RUnlock()
+		}
+	}
+}
+
+func (svc *streamSvc) orderOpenStreamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case orderData := <-svc.orderOpenHandler.Output():
+			svc.orderMtx.RLock()
+			svc.log.Debug("sending order received data to streams")
+			for order, stream := range svc.orderStreams {
+				if order.ID == orderData.OrderID {
+					var status types.OrderStatus
+					if order.Request.Quantity.Equal(orderData.RemainingSize) ==  {
+						status = ord.Pending
+					} else {
+						status = ord.Partial
+					}
+					stream <- types.OrderDTO{
+						Market:       order.Market,
+						CreationTime: order.CreationTime,
+						Filled:       order.Request.Quantity.Sub(orderData.RemainingSize),
+						ID:           order.ID,
+						Request:      order.Request,
+						Status:       status,
 					}
 				}
 			}
