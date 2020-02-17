@@ -1,7 +1,6 @@
-package coinbasepro
+package coinbase
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/go-playground/log/v7"
@@ -10,63 +9,46 @@ import (
 )
 
 type streamSvc struct {
-	wsHandler *websocketHandler
-
-	mutex         sync.Mutex
+	log           log.Entry
+	wsSvc         *websocketSvc
+	tickerHandler *tickerHandler
 	stop          <-chan bool
-	wsStream      <-chan DataPackage
-	orderStreams  map[types.OrderDTO]chan types.OrderDTO
+
+	orderMtx     sync.RWMutex
+	orderStreams map[types.OrderDTO]chan types.OrderDTO
+
+	tickerMtx     sync.RWMutex
 	tickerStreams map[types.MarketDTO]chan types.TickerDTO
-	walletStreams map[types.WalletDTO]chan types.WalletDTO
 }
 
-func newStreamService(stop <-chan bool, wsh *websocketHandler) *streamSvc {
-	svc := &streamSvc{
+func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
+	svc = &streamSvc{
 		stop:          stop,
-		wsHandler:     wsh,
-		wsStream:      wsh.GetStream(stop),
+		wsSvc:         wsSvc,
 		orderStreams:  make(map[types.OrderDTO]chan types.OrderDTO),
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
-		walletStreams: make(map[types.WalletDTO]chan types.WalletDTO),
+		log:           log.WithField("source", "coinbase.streamSvc"),
 	}
 
-	go svc.streamSink()
+	svc.registerTickerHandler()
 
-	return svc
+	go svc.streamSink()
+	return
 }
 
-func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
-	svc.mutex.Lock()
-	defer svc.mutex.Unlock()
-
-	// Create the stream
-	rawStream := make(chan types.OrderDTO)
-	stream = rawStream
-	svc.orderStreams[order] = rawStream
-
-	// Update the subscriptions
-	svc.updateWebsocketSubscriptions()
-
-	// Handle stop
-	go func() {
-		select {
-		case <-stop:
-			delete(svc.orderStreams, order)
-			svc.updateWebsocketSubscriptions()
-		}
-	}()
-
-	return
+func (svc *streamSvc) registerTickerHandler() {
+	svc.tickerHandler = newTickerHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler("ticker", svc.tickerHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
-	svc.mutex.Lock()
-	defer svc.mutex.Unlock()
-
 	// Create the stream
+	svc.log.Debugf("ticker stream request for %s", market.Name)
 	rawStream := make(chan types.TickerDTO)
 	stream = rawStream
+	svc.tickerMtx.Lock()
 	svc.tickerStreams[market] = rawStream
+	svc.tickerMtx.Unlock()
 
 	// Update the subscriptions
 	svc.updateWebsocketSubscriptions()
@@ -75,23 +57,48 @@ func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (st
 	go func() {
 		select {
 		case <-stop:
-			svc.mutex.Lock()
+			svc.tickerMtx.Lock()
 			delete(svc.tickerStreams, market)
+			svc.tickerMtx.Unlock()
+
 			svc.updateWebsocketSubscriptions()
-			svc.mutex.Unlock()
 		}
 	}()
 
 	return
 }
 
-func (svc *streamSvc) WalletStream(stop <-chan bool, wal types.WalletDTO) (stream <-chan types.WalletDTO, err error) {
+func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
+	// Create the stream
+	rawStream := make(chan types.OrderDTO)
+	stream = rawStream
+	svc.orderMtx.Lock()
+	svc.orderStreams[order] = rawStream
+	svc.orderMtx.Unlock()
+
+	// Update the subscriptions
+	svc.updateWebsocketSubscriptions()
+
+	// Handle stop
+	go func() {
+		select {
+		case <-stop:
+			// Remove the stream from the list of streams
+			svc.orderMtx.Lock()
+			delete(svc.orderStreams, order)
+			svc.orderMtx.Unlock()
+
+			// Update the subscriptions
+			svc.updateWebsocketSubscriptions()
+		}
+	}()
+
 	return
 }
 
 func (svc *streamSvc) updateWebsocketSubscriptions() {
 	var tickerSubs, fullSubs []string
-	subs := svc.wsHandler.Subscriptions()
+	subs := svc.wsSvc.Subscriptions()
 
 	// First, remove any unneeded subscriptions
 	for _, channel := range subs.Channels {
@@ -104,12 +111,15 @@ func (svc *streamSvc) updateWebsocketSubscriptions() {
 			for _, id := range channel.ProductIDs {
 				var watched bool
 				// Check if the ID is being watched
+				svc.orderMtx.RLock()
 				for order := range svc.orderStreams {
 					if order.Market.Name == id {
 						watched = true
 						break
 					}
 				}
+				svc.orderMtx.RUnlock()
+
 				// If it's not watched, unsubscribe
 				if !watched {
 					svc.unsubscribe(channel.Name, id)
@@ -123,35 +133,42 @@ func (svc *streamSvc) updateWebsocketSubscriptions() {
 			for _, id := range channel.ProductIDs {
 				var watched bool
 				// Check if the ID is being watched
+				svc.tickerMtx.RLock()
 				for market := range svc.tickerStreams {
 					if market.Name == id {
 						watched = true
 						break
 					}
 				}
+				svc.tickerMtx.RUnlock()
+
 				// If it's not watched, unsubscribe
 				if !watched {
 					svc.unsubscribe(channel.Name, id)
 				}
 			}
 		default:
-			log.Warnf("unexpected channel type %s", channel.Name)
+			svc.log.Warnf("unexpected channel type %s", channel.Name)
 		}
 	}
 
 	// Add any missing ticker subscriptions
+	svc.tickerMtx.RLock()
 	for market := range svc.tickerStreams {
 		if !funk.Contains(tickerSubs, market.Name) {
 			svc.subscribe("ticker", market.Name)
 		}
 	}
+	svc.tickerMtx.RUnlock()
 
 	// Add missing full subscriptions
+	svc.orderMtx.RLock()
 	for order := range svc.orderStreams {
 		if !funk.Contains(fullSubs, order.Market.Name) {
 			svc.subscribe("full", order.Market.Name)
 		}
 	}
+	svc.orderMtx.RUnlock()
 }
 
 func (svc *streamSvc) unsubscribe(channel string, productID string) {
@@ -165,10 +182,10 @@ func (svc *streamSvc) unsubscribe(channel string, productID string) {
 			ProductIDs: append([]string{}, productID),
 		},
 	}}
-	svc.wsHandler.Unsubscribe(req)
+	svc.wsSvc.Unsubscribe(req)
 }
 
-func (svc *streamSvc) subscribe(channel string, productId string) {
+func (svc *streamSvc) subscribe(channel string, productID string) {
 	// Build the unsubscribe request
 	req := Subscribe{Channels: []struct {
 		Name       string   `json:"name"`
@@ -176,10 +193,10 @@ func (svc *streamSvc) subscribe(channel string, productId string) {
 	}{
 		{
 			Name:       channel,
-			ProductIDs: append([]string{}, productId),
+			ProductIDs: append([]string{}, productID),
 		},
 	}}
-	svc.wsHandler.Subscribe(req)
+	svc.wsSvc.Subscribe(req)
 }
 
 func (svc *streamSvc) streamSink() {
@@ -187,61 +204,23 @@ func (svc *streamSvc) streamSink() {
 		select {
 		case <-svc.stop:
 			return
-		case pkg := <-svc.wsStream:
-			select {
-			case <-svc.stop:
-				return
-			default:
+		case ticker := <-svc.tickerHandler.Output():
+			svc.tickerMtx.RLock()
+			svc.log.Debug("sending ticker data to streams")
+			for market, stream := range svc.tickerStreams {
+				if market.Name == ticker.ProductID {
+					go func(stream chan types.TickerDTO) {
+						stream <- types.TickerDTO{
+							Ask:       ticker.BestAsk,
+							Bid:       ticker.BestBid,
+							Price:     ticker.Price,
+							Quantity:  ticker.LastSize,
+							Timestamp: ticker.Time,
+						}
+					}(stream)
+				}
 			}
-			switch pkg.Type {
-			case "ticker":
-				svc.broadcastTicker(pkg)
-			default:
-				log.WithField("type", pkg.Type).Error("unexpected message")
-			}
+			svc.tickerMtx.RUnlock()
 		}
 	}
-}
-
-func (svc *streamSvc) broadcastOrder(data interface{}) {
-
-}
-
-func (svc *streamSvc) broadcastTicker(data DataPackage) {
-	var ticker Ticker
-	err := json.Unmarshal(data.Data, &ticker)
-	if err != nil {
-		log.WithError(err).Error("could not unmarshal ticker")
-	}
-	payload := types.TickerDTO{
-		Ask:       ticker.BestAsk,
-		Bid:       ticker.BestBid,
-		Price:     ticker.Price,
-		Quantity:  ticker.LastSize,
-		Timestamp: ticker.Time,
-	}
-
-	// Copy the map
-	streams := make(map[types.MarketDTO]chan types.TickerDTO)
-	svc.mutex.Lock()
-	for market, stream := range svc.tickerStreams {
-		streams[market] = stream
-	}
-	svc.mutex.Unlock()
-
-	for market, stream := range streams {
-		if market.Name == ticker.ProductID {
-			svc.mutex.Lock()
-			select {
-			case stream <- payload:
-			default:
-				log.Warn("ticker: skipping blocked stream")
-			}
-			svc.mutex.Unlock()
-		}
-	}
-}
-
-func (svc *streamSvc) broadcastWallet(data interface{}) {
-
 }

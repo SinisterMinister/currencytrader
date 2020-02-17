@@ -1,4 +1,4 @@
-package coinbasepro
+package coinbase
 
 import (
 	cbp "github.com/preichenberger/go-coinbasepro/v2"

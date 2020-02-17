@@ -1,4 +1,4 @@
-package coinbasepro
+package coinbase
 
 import (
 	"strings"
@@ -24,10 +24,13 @@ type provider struct {
 
 func New(stop <-chan bool, client *coinbasepro.Client) types.Provider {
 	// Instantiate websocket handler
-	wsh := newWebSocketHandler(client)
+	wssvc, err := newWebsocketSvc(stop)
+	if err != nil {
+
+	}
 
 	// Instantiate stream service
-	svc := newStreamService(stop, wsh)
+	svc := newStreamService(stop, wssvc)
 	provider := &provider{
 		client:     client,
 		currencies: make(map[string]types.CurrencyDTO),

@@ -5,25 +5,30 @@ import (
 	"os/signal"
 
 	"github.com/go-playground/log/v7"
-	coinbase "github.com/preichenberger/go-coinbasepro/v2"
+	"github.com/go-playground/log/v7/handlers/console"
+	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
-	"github.com/sinisterminister/currencytrader/types/provider/coinbasepro"
+	"github.com/sinisterminister/currencytrader/types/provider/coinbase"
 )
 
 func main() {
+	// Setup the console logger
+	log.AddHandler(console.New(true), log.InfoLevel, log.WarnLevel, log.ErrorLevel, log.NoticeLevel, log.FatalLevel, log.AlertLevel, log.PanicLevel)
+
 	// Setup a close channel
 	killSwitch := make(chan bool)
 
 	// Setup a coinbase client
-	client := coinbase.NewClient()
-	client.UpdateConfig(&coinbase.ClientConfig{
+	client := coinbasepro.NewClient()
+
+	client.UpdateConfig(&coinbasepro.ClientConfig{
 		Key:        "f561da92e7e431717e01b81339a92240",
 		Passphrase: "throwback",
 		Secret:     "YY7CvMVlA1/Ld9joXidr1brEc2xn9MOIacGijym7md3yv6heK9Z52IDFD7rhY3fwQvNaamZX8KcVHvAjnTpMng==",
 	})
 	// Start up a coinbase provider
-	provider := coinbasepro.New(killSwitch, client)
+	provider := coinbase.New(killSwitch, client)
 
 	// Get an instance of the trader
 	trader := currencytrader.New(provider)
@@ -75,7 +80,9 @@ func streamTicker(stop <-chan bool, market types.Market) {
 		// Data received
 		case data := <-stream:
 			if data != nil {
-				log.WithField("data", data.ToDTO()).Infof("stream data recieved for %s market", market.Name())
+				log.WithField("data", data.ToDTO()).Infof("stream data received for %s market", market.Name())
+			} else {
+				log.Info("empty stream data received")
 			}
 		}
 	}

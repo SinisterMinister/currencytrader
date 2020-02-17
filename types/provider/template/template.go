@@ -50,7 +50,7 @@ func (p *provider) TickerStream(stop <-chan bool, market types.MarketDTO) (strea
 	return
 }
 
-func (p *provider) Wallet(currency types.CurrencyDTO) (wal types.WalletDTO, err error) {
+func (p *provider) Wallet(id string) (wal types.WalletDTO, err error) {
 	return
 }
 
@@ -58,6 +58,6 @@ func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
 	return
 }
 
-func (p *provider) WalletStream(stop <-chan bool, currency types.CurrencyDTO) (stream <-chan types.WalletDTO, err error) {
+func (p *provider) WalletStream(stop <-chan bool, wal types.WalletDTO) (stream <-chan types.WalletDTO, err error) {
 	return
 }

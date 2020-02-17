@@ -4,7 +4,9 @@ go 1.13
 
 require (
 	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/go-playground/errors v3.3.0+incompatible // indirect
 	github.com/go-playground/locales v0.12.1 // indirect
+	github.com/go-playground/log v6.3.0+incompatible // indirect
 	github.com/go-playground/log/v7 v7.0.2
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/google/go-cmp v0.3.1
@@ -18,7 +20,7 @@ require (
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337
 	github.com/sinisterminister/coinfactory v0.0.0-20190803053850-cf70617b6a0e
 	github.com/sirupsen/logrus v1.4.2 // indirect
-	github.com/spf13/viper v1.4.0 // indirect
+	github.com/spf13/viper v1.4.0
 	github.com/stamblerre/gocode v0.0.0-20190327203809-810592086997 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/thoas/go-funk v0.4.0

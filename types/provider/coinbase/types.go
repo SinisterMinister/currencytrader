@@ -1,10 +1,14 @@
-package coinbasepro
+package coinbase
 
 import (
 	"time"
 
 	"github.com/shopspring/decimal"
 )
+
+type MessageHandler interface {
+	Input() chan<- DataPackage
+}
 
 type Message struct {
 	Type string `json:"type"`

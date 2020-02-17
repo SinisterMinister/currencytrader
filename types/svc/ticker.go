@@ -7,6 +7,7 @@ import (
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/ticker"
+	"github.com/spf13/viper"
 )
 
 type Ticker struct {
@@ -52,7 +53,7 @@ func (t *Ticker) Ticker(m types.Market) (tkr types.Ticker, err error) {
 }
 
 func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan types.Ticker {
-	stream := make(chan types.Ticker)
+	stream := make(chan types.Ticker, viper.GetInt("tickersvc.streamBufferSize"))
 	wrapper := &streamWrapper{
 		market: market,
 		stream: stream,
@@ -182,18 +183,17 @@ func (t *Ticker) broadcastToStreams(market types.Market, data types.Ticker) {
 
 	if !ok {
 		// No streams to broadcast to
+		t.mutex.RUnlock()
 		return
 	}
 	streams = append([]*streamWrapper{}, streams...)
 	t.mutex.RUnlock()
 	for _, wrapper := range streams {
-		wrapper.mutex.Lock()
 		select {
 		case wrapper.stream <- data:
 		default:
 			log.Warn("Skipping blocked ticker channel")
 		}
-		wrapper.mutex.Unlock()
 	}
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/go-playground/log/v7"
 
@@ -68,7 +69,7 @@ func candleLogger(stop <-chan bool, stream chan types.CandleDTO) {
 
 func logCandles(stop <-chan bool, mkt types.Market, stream chan<- types.CandleDTO) {
 	// Get the candles for the market
-	candles, err := mkt.Candles(candle.FiveMinutes, 5)
+	candles, err := mkt.Candles(candle.FiveMinutes, time.Now().Add(-5*time.Minute), time.Now())
 
 	// Bail on error
 	if err != nil {
