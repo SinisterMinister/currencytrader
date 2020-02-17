@@ -16,6 +16,7 @@ type streamSvc struct {
 	tickerHandler        *tickerHandler
 	orderReceivedHandler *orderReceivedHandler
 	orderOpenHandler     *orderOpenHandler
+	orderDoneHandler     *orderDoneHandler
 	stop                 <-chan bool
 
 	orderMtx     sync.RWMutex
@@ -37,6 +38,7 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 	svc.registerTickerHandler()
 	svc.registerOrderReceivedHandler()
 	svc.registerOrderOpenHandler()
+	svc.registerOrderDoneHandler()
 
 	go svc.tickerStreamSink()
 	go svc.orderReceivedStreamSink()
@@ -58,6 +60,11 @@ func (svc *streamSvc) registerOrderReceivedHandler() {
 func (svc *streamSvc) registerOrderOpenHandler() {
 	svc.orderOpenHandler = newOrderOpenHandler(svc.stop)
 	svc.wsSvc.RegisterMessageHandler("open", svc.orderOpenHandler)
+}
+
+func (svc *streamSvc) registerOrderDoneHandler() {
+	svc.orderDoneHandler = newOrderDoneHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler("done", svc.orderDoneHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
@@ -274,14 +281,46 @@ func (svc *streamSvc) orderOpenStreamSink() {
 			return
 		case orderData := <-svc.orderOpenHandler.Output():
 			svc.orderMtx.RLock()
-			svc.log.Debug("sending order received data to streams")
+			svc.log.Debug("sending order open data to streams")
 			for order, stream := range svc.orderStreams {
 				if order.ID == orderData.OrderID {
 					var status types.OrderStatus
-					if order.Request.Quantity.Equal(orderData.RemainingSize) ==  {
+					if order.Request.Quantity.Equal(orderData.RemainingSize) {
 						status = ord.Pending
 					} else {
 						status = ord.Partial
+					}
+					stream <- types.OrderDTO{
+						Market:       order.Market,
+						CreationTime: order.CreationTime,
+						Filled:       order.Request.Quantity.Sub(orderData.RemainingSize),
+						ID:           order.ID,
+						Request:      order.Request,
+						Status:       status,
+					}
+				}
+			}
+			svc.orderMtx.RUnlock()
+		}
+	}
+}
+
+func (svc *streamSvc) orderDoneStreamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case orderData := <-svc.orderDoneHandler.Output():
+			svc.orderMtx.RLock()
+			svc.log.Debug("sending order done data to streams")
+			for order, stream := range svc.orderStreams {
+				if order.ID == orderData.OrderID {
+					var status types.OrderStatus
+					if orderData.Reason == "filled" {
+						status = ord.Filled
+					}
+					if orderData.Reason == "cancelled" {
+						status = ord.Canceled
 					}
 					stream <- types.OrderDTO{
 						Market:       order.Market,
