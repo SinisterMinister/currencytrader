@@ -53,7 +53,7 @@ func (t *Ticker) Ticker(m types.Market) (tkr types.Ticker, err error) {
 }
 
 func (t *Ticker) TickerStream(stop <-chan bool, market types.Market) <-chan types.Ticker {
-	stream := make(chan types.Ticker, viper.GetInt("tickersvc.streamBufferSize"))
+	stream := make(chan types.Ticker, viper.GetInt("currencytrader.tickersvc.streamBufferSize"))
 	wrapper := &streamWrapper{
 		market: market,
 		stream: stream,
