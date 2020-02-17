@@ -32,7 +32,7 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 
 	svc.registerTickerHandler()
 
-	go svc.streamSink()
+	go svc.tickerStreamSink()
 	return
 }
 
@@ -199,7 +199,7 @@ func (svc *streamSvc) subscribe(channel string, productID string) {
 	svc.wsSvc.Subscribe(req)
 }
 
-func (svc *streamSvc) streamSink() {
+func (svc *streamSvc) tickerStreamSink() {
 	for {
 		select {
 		case <-svc.stop:
@@ -209,15 +209,13 @@ func (svc *streamSvc) streamSink() {
 			svc.log.Debug("sending ticker data to streams")
 			for market, stream := range svc.tickerStreams {
 				if market.Name == ticker.ProductID {
-					go func(stream chan types.TickerDTO) {
-						stream <- types.TickerDTO{
-							Ask:       ticker.BestAsk,
-							Bid:       ticker.BestBid,
-							Price:     ticker.Price,
-							Quantity:  ticker.LastSize,
-							Timestamp: ticker.Time,
-						}
-					}(stream)
+					stream <- types.TickerDTO{
+						Ask:       ticker.BestAsk,
+						Bid:       ticker.BestBid,
+						Price:     ticker.Price,
+						Quantity:  ticker.LastSize,
+						Timestamp: ticker.Time,
+					}
 				}
 			}
 			svc.tickerMtx.RUnlock()
