@@ -17,6 +17,7 @@ type streamSvc struct {
 	orderReceivedHandler *orderReceivedHandler
 	orderOpenHandler     *orderOpenHandler
 	orderDoneHandler     *orderDoneHandler
+	orderMatchHandler    *orderMatchHandler
 	stop                 <-chan bool
 
 	orderMtx     sync.RWMutex
@@ -39,10 +40,13 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 	svc.registerOrderReceivedHandler()
 	svc.registerOrderOpenHandler()
 	svc.registerOrderDoneHandler()
+	svc.registerOrderMatchHandler()
 
 	go svc.tickerStreamSink()
 	go svc.orderReceivedStreamSink()
 	go svc.orderOpenStreamSink()
+	go svc.orderDoneStreamSink()
+	go svc.orderMatchStreamSink()
 
 	return
 }
@@ -65,6 +69,11 @@ func (svc *streamSvc) registerOrderOpenHandler() {
 func (svc *streamSvc) registerOrderDoneHandler() {
 	svc.orderDoneHandler = newOrderDoneHandler(svc.stop)
 	svc.wsSvc.RegisterMessageHandler("done", svc.orderDoneHandler)
+}
+
+func (svc *streamSvc) registerOrderMatchHandler() {
+	svc.orderMatchHandler = newOrderMatchHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler("match", svc.orderMatchHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
@@ -329,6 +338,31 @@ func (svc *streamSvc) orderDoneStreamSink() {
 						ID:           order.ID,
 						Request:      order.Request,
 						Status:       status,
+					}
+				}
+			}
+			svc.orderMtx.RUnlock()
+		}
+	}
+}
+
+func (svc *streamSvc) orderMatchStreamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case orderData := <-svc.orderMatchHandler.Output():
+			svc.orderMtx.RLock()
+			svc.log.Debug("sending order match data to streams")
+			for order, stream := range svc.orderStreams {
+				if order.ID == orderData.OrderID {
+					stream <- types.OrderDTO{
+						Market:       order.Market,
+						CreationTime: order.CreationTime,
+						Filled:       order.Filled,
+						ID:           order.ID,
+						Request:      order.Request,
+						Status:       ord.Partial,
 					}
 				}
 			}

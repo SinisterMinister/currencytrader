@@ -201,3 +201,52 @@ func (h *orderDoneHandler) process(stop <-chan bool) {
 		}
 	}
 }
+
+type orderMatchHandler struct {
+	input  chan DataPackage
+	output chan Match
+
+	log log.Entry
+}
+
+func newOrderMatchHandler(stop <-chan bool) *orderMatchHandler {
+	handler := &orderMatchHandler{
+		input:  make(chan DataPackage),
+		output: make(chan Done),
+		log:    log.WithField("source", "coinbase.orderMatchHandler"),
+	}
+
+	go handler.process(stop)
+
+	return handler
+}
+
+func (h *orderMatchHandler) Input() chan<- DataPackage {
+	return h.input
+}
+
+func (h *orderMatchHandler) Output() <-chan Match {
+	return h.output
+}
+
+func (h *orderMatchHandler) process(stop <-chan bool) {
+	h.log.Debug("starting order match handler")
+	for {
+		select {
+		case <-stop:
+			// Time to stop
+			h.log.Debug("stopping order match handler")
+			return
+		case pkg := <-h.input:
+			// Process data
+			var order Match
+			h.log.Debug("parsing order match data")
+			if err := json.Unmarshal(pkg.Data, &order); err != nil {
+				h.log.WithError(err).Error("could not parse order match data")
+			}
+
+			h.log.Debug("sending order match data")
+			h.output <- order
+		}
+	}
+}
