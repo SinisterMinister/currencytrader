@@ -54,3 +54,52 @@ func (h *tickerHandler) process(stop <-chan bool) {
 		}
 	}
 }
+
+type orderReceivedHandler struct {
+	input  chan DataPackage
+	output chan Received
+
+	log log.Entry
+}
+
+func newOrderReceivedHandler(stop <-chan bool) *orderReceivedHandler {
+	handler := &orderReceivedHandler{
+		input:  make(chan DataPackage),
+		output: make(chan Received),
+		log:    log.WithField("source", "coinbase.orderReceivedHandler"),
+	}
+
+	go handler.process(stop)
+
+	return handler
+}
+
+func (h *orderReceivedHandler) Input() chan<- DataPackage {
+	return h.input
+}
+
+func (h *orderReceivedHandler) Output() <-chan Received {
+	return h.output
+}
+
+func (h *orderReceivedHandler) process(stop <-chan bool) {
+	h.log.Debug("starting order receieved handler")
+	for {
+		select {
+		case <-stop:
+			// Time to stop
+			h.log.Debug("stopping order receieved handler")
+			return
+		case pkg := <-h.input:
+			// Process data
+			var order Received
+			h.log.Debug("parsing order receieved data")
+			if err := json.Unmarshal(pkg.Data, &order); err != nil {
+				h.log.WithError(err).Error("could not parse order receieved data")
+			}
+
+			h.log.Debug("sending order receieved data")
+			h.output <- order
+		}
+	}
+}

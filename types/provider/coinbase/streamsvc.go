@@ -4,15 +4,18 @@ import (
 	"sync"
 
 	"github.com/go-playground/log/v7"
+	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
+	ord "github.com/sinisterminister/currencytrader/types/order"
 	"github.com/thoas/go-funk"
 )
 
 type streamSvc struct {
-	log           log.Entry
-	wsSvc         *websocketSvc
-	tickerHandler *tickerHandler
-	stop          <-chan bool
+	log                  log.Entry
+	wsSvc                *websocketSvc
+	tickerHandler        *tickerHandler
+	orderReceivedHandler *orderReceivedHandler
+	stop                 <-chan bool
 
 	orderMtx     sync.RWMutex
 	orderStreams map[types.OrderDTO]chan types.OrderDTO
@@ -31,14 +34,22 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 	}
 
 	svc.registerTickerHandler()
+	svc.registerOrderReceivedHandler()
 
 	go svc.tickerStreamSink()
+	go svc.orderReceivedStreamSink()
+
 	return
 }
 
 func (svc *streamSvc) registerTickerHandler() {
 	svc.tickerHandler = newTickerHandler(svc.stop)
 	svc.wsSvc.RegisterMessageHandler("ticker", svc.tickerHandler)
+}
+
+func (svc *streamSvc) registerOrderReceivedHandler() {
+	svc.orderReceivedHandler = newOrderReceivedHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler("received", svc.orderReceivedHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
@@ -219,6 +230,31 @@ func (svc *streamSvc) tickerStreamSink() {
 				}
 			}
 			svc.tickerMtx.RUnlock()
+		}
+	}
+}
+
+func (svc *streamSvc) orderReceivedStreamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case orderData := <-svc.orderReceivedHandler.Output():
+			svc.orderMtx.RLock()
+			svc.log.Debug("sending order received data to streams")
+			for order, stream := range svc.orderStreams {
+				if order.ID == orderData.OrderID {
+					stream <- types.OrderDTO{
+						Market:       order.Market,
+						CreationTime: order.CreationTime,
+						Filled:       decimal.Zero,
+						ID:           order.ID,
+						Request:      order.Request,
+						Status:       ord.Pending,
+					}
+				}
+			}
+			svc.orderMtx.RUnlock()
 		}
 	}
 }

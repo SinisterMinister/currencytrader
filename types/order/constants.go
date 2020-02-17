@@ -3,7 +3,7 @@ package order
 import "github.com/sinisterminister/currencytrader/types"
 
 const (
-	// Pending is for orders still waiting for a watch
+	// Pending is for orders still waiting for a match
 	Pending types.OrderStatus = "PENDING"
 
 	// Partial is for orders that have been partially filled
