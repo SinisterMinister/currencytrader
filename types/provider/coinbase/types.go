@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"github.com/sinisterminister/currencytrader/types"
+	ord "github.com/sinisterminister/currencytrader/types/order"
 )
 
 type MessageHandler interface {
@@ -118,15 +120,27 @@ type Level2Update struct {
 
 type Received struct {
 	Message
-	ProductID string          `json:"product_id"`
-	Time      time.Time       `json:"time"`
-	Sequence  int             `json:"sequence"`
-	OrderID   string          `json:"order_id"`
-	Size      decimal.Decimal `json:"size"`
-	Funds     decimal.Decimal `json:"funds"`
-	Price     decimal.Decimal `json:"price"`
-	Side      string          `json:"side"`
-	OrderType string          `json:"order_type"`
+	ProductID     string          `json:"product_id"`
+	Time          time.Time       `json:"time"`
+	Sequence      int             `json:"sequence"`
+	OrderID       string          `json:"order_id"`
+	Size          decimal.Decimal `json:"size"`
+	Funds         decimal.Decimal `json:"funds"`
+	Price         decimal.Decimal `json:"price"`
+	Side          string          `json:"side"`
+	OrderType     string          `json:"order_type"`
+	ClientOrderID string          `json:"client_oid"`
+}
+
+func (r *Received) ToDTO(order types.OrderDTO) types.OrderDTO {
+	return types.OrderDTO{
+		Market:       order.Market,
+		CreationTime: r.Time,
+		Filled:       decimal.Zero,
+		ID:           r.OrderID,
+		Request:      order.Request,
+		Status:       ord.Pending,
+	}
 }
 
 type Open struct {
@@ -140,6 +154,23 @@ type Open struct {
 	Side          string          `json:"side"`
 }
 
+func (o *Open) ToDTO(order types.OrderDTO) types.OrderDTO {
+	var status types.OrderStatus
+	if order.Request.Quantity.Equal(o.RemainingSize) {
+		status = ord.Pending
+	} else {
+		status = ord.Partial
+	}
+	return types.OrderDTO{
+		Market:       order.Market,
+		CreationTime: order.CreationTime,
+		Filled:       order.Request.Quantity.Sub(o.RemainingSize),
+		ID:           order.ID,
+		Request:      order.Request,
+		Status:       status,
+	}
+}
+
 type Done struct {
 	Message
 	ProductID     string          `json:"product_id"`
@@ -150,6 +181,24 @@ type Done struct {
 	Price         decimal.Decimal `json:"price"`
 	Side          string          `json:"side"`
 	Reason        string          `json:"reason"`
+}
+
+func (d *Done) ToDTO(order types.OrderDTO) types.OrderDTO {
+	var status types.OrderStatus
+	if d.Reason == "filled" {
+		status = ord.Filled
+	}
+	if d.Reason == "cancelled" {
+		status = ord.Canceled
+	}
+	return types.OrderDTO{
+		Market:       order.Market,
+		CreationTime: order.CreationTime,
+		Filled:       order.Request.Quantity.Sub(d.RemainingSize),
+		ID:           order.ID,
+		Request:      order.Request,
+		Status:       status,
+	}
 }
 
 type Match struct {
@@ -169,6 +218,17 @@ type Match struct {
 	ProfileID      string          `json:"profile_id"`
 }
 
+func (m *Match) ToDTO(order types.OrderDTO) types.OrderDTO {
+	return types.OrderDTO{
+		Market:       order.Market,
+		CreationTime: order.CreationTime,
+		Filled:       m.Size,
+		ID:           order.ID,
+		Request:      order.Request,
+		Status:       ord.Partial,
+	}
+}
+
 type Change struct {
 	Message
 	ProductID string          `json:"product_id"`
@@ -181,6 +241,20 @@ type Change struct {
 	NewFunds  decimal.Decimal `json:"new_funds"`
 	OldSize   decimal.Decimal `json:"old_size"`
 	NewSize   decimal.Decimal `json:"new_size"`
+}
+
+func (c *Change) ToDTO(order types.OrderDTO) types.OrderDTO {
+	request := order.Request
+	request.Price = c.Price
+	request.Quantity = c.NewSize
+	return types.OrderDTO{
+		Market:       order.Market,
+		CreationTime: order.CreationTime,
+		Filled:       order.Filled,
+		ID:           order.ID,
+		Request:      request,
+		Status:       ord.Updated,
+	}
 }
 
 type Activate struct {

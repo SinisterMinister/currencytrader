@@ -2,11 +2,10 @@ package coinbase
 
 import (
 	"sync"
+	"time"
 
 	"github.com/go-playground/log/v7"
-	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
-	ord "github.com/sinisterminister/currencytrader/types/order"
 	"github.com/thoas/go-funk"
 )
 
@@ -18,20 +17,28 @@ type streamSvc struct {
 	orderOpenHandler     *orderOpenHandler
 	orderDoneHandler     *orderDoneHandler
 	orderMatchHandler    *orderMatchHandler
+	orderChangeHandler   *orderChangeHandler
 	stop                 <-chan bool
 
-	orderMtx     sync.RWMutex
-	orderStreams map[types.OrderDTO]chan types.OrderDTO
+	orderMtx      sync.RWMutex
+	orderStreams  map[<-chan bool]*orderStreamWrapper
+	workingOrders map[string]workingOrder
 
 	tickerMtx     sync.RWMutex
 	tickerStreams map[types.MarketDTO]chan types.TickerDTO
+}
+
+type workingOrder struct {
+	id      string
+	doneAt  time.Time
+	updates []interface{}
 }
 
 func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 	svc = &streamSvc{
 		stop:          stop,
 		wsSvc:         wsSvc,
-		orderStreams:  make(map[types.OrderDTO]chan types.OrderDTO),
+		orderStreams:  make(map[<-chan bool]*orderStreamWrapper),
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
 		log:           log.WithField("source", "coinbase.streamSvc"),
 	}
@@ -103,16 +110,44 @@ func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (st
 	return
 }
 
+type orderStreamWrapper struct {
+	dto    types.OrderDTO
+	stream chan types.OrderDTO
+}
+
 func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
 	// Create the stream
-	rawStream := make(chan types.OrderDTO)
-	stream = rawStream
+	wrapper := &orderStreamWrapper{
+		dto:    order,
+		stream: make(chan types.OrderDTO),
+	}
+	stream = wrapper.stream
 	svc.orderMtx.Lock()
-	svc.orderStreams[order] = rawStream
+	svc.orderStreams[stop] = wrapper
 	svc.orderMtx.Unlock()
 
 	// Update the subscriptions
 	svc.updateWebsocketSubscriptions()
+
+	// Handle updating the stream with working data if any
+	go func() {
+		if data, ok := svc.workingOrders[order.ID]; ok {
+			for _, d := range data.updates {
+				switch v := d.(type) {
+				case Received:
+					wrapper.stream <- v.ToDTO(wrapper.dto)
+				case Open:
+					wrapper.stream <- v.ToDTO(wrapper.dto)
+				case Done:
+					wrapper.stream <- v.ToDTO(wrapper.dto)
+				case Match:
+					wrapper.stream <- v.ToDTO(wrapper.dto)
+				case Change:
+					wrapper.stream <- v.ToDTO(wrapper.dto)
+				}
+			}
+		}
+	}()
 
 	// Handle stop
 	go func() {
@@ -120,7 +155,7 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 		case <-stop:
 			// Remove the stream from the list of streams
 			svc.orderMtx.Lock()
-			delete(svc.orderStreams, order)
+			delete(svc.orderStreams, stop)
 			svc.orderMtx.Unlock()
 
 			// Update the subscriptions
@@ -129,6 +164,19 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 	}()
 
 	return
+}
+
+func (svc *streamSvc) updateStreamWithWorkingData(id string, wrapper *orderStreamWrapper) {
+	svc.orderMtx.RLock()
+	if data, ok := svc.workingOrders[id]; ok {
+		for _, d := range data.updates {
+			switch v := d.(type) {
+			case Received:
+				wrapper.stream <- v.ToDTO(wrapper.dto)
+			}
+		}
+	}
+	svc.orderMtx.RUnlock()
 }
 
 func (svc *streamSvc) updateWebsocketSubscriptions() {
@@ -147,8 +195,8 @@ func (svc *streamSvc) updateWebsocketSubscriptions() {
 				var watched bool
 				// Check if the ID is being watched
 				svc.orderMtx.RLock()
-				for order := range svc.orderStreams {
-					if order.Market.Name == id {
+				for _, wrapper := range svc.orderStreams {
+					if wrapper.dto.Market.Name == id {
 						watched = true
 						break
 					}
@@ -198,9 +246,9 @@ func (svc *streamSvc) updateWebsocketSubscriptions() {
 
 	// Add missing full subscriptions
 	svc.orderMtx.RLock()
-	for order := range svc.orderStreams {
-		if !funk.Contains(fullSubs, order.Market.Name) {
-			svc.subscribe("full", order.Market.Name)
+	for _, wrapper := range svc.orderStreams {
+		if !funk.Contains(fullSubs, wrapper.dto.Market.Name) {
+			svc.subscribe("full", wrapper.dto.Market.Name)
 		}
 	}
 	svc.orderMtx.RUnlock()
@@ -258,6 +306,17 @@ func (svc *streamSvc) tickerStreamSink() {
 	}
 }
 
+func (svc *streamSvc) updateWorkingOrders(id string, data interface{}) {
+	svc.orderMtx.Lock()
+	defer svc.orderMtx.Unlock()
+	if _, ok := svc.workingOrders[id]; !ok {
+		svc.workingOrders[id] = workingOrder{id: id, updates: []interface{}{}}
+	}
+	order := svc.workingOrders[id]
+	order.updates = append(order.updates, data)
+	svc.workingOrders[id] = order
+}
+
 func (svc *streamSvc) orderReceivedStreamSink() {
 	for {
 		select {
@@ -266,19 +325,16 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 		case orderData := <-svc.orderReceivedHandler.Output():
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order received data to streams")
-			for order, stream := range svc.orderStreams {
-				if order.ID == orderData.OrderID {
-					stream <- types.OrderDTO{
-						Market:       order.Market,
-						CreationTime: order.CreationTime,
-						Filled:       decimal.Zero,
-						ID:           order.ID,
-						Request:      order.Request,
-						Status:       ord.Pending,
-					}
+			for _, wrapper := range svc.orderStreams {
+				if wrapper.dto.ID == orderData.OrderID {
+					wrapper.stream <- orderData.ToDTO(wrapper.dto)
 				}
 			}
 			svc.orderMtx.RUnlock()
+
+			// Update working orders
+			svc.log.Debug("adding order received data to working orders")
+			svc.updateWorkingOrders(orderData.OrderID, orderData)
 		}
 	}
 }
@@ -291,25 +347,16 @@ func (svc *streamSvc) orderOpenStreamSink() {
 		case orderData := <-svc.orderOpenHandler.Output():
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order open data to streams")
-			for order, stream := range svc.orderStreams {
-				if order.ID == orderData.OrderID {
-					var status types.OrderStatus
-					if order.Request.Quantity.Equal(orderData.RemainingSize) {
-						status = ord.Pending
-					} else {
-						status = ord.Partial
-					}
-					stream <- types.OrderDTO{
-						Market:       order.Market,
-						CreationTime: order.CreationTime,
-						Filled:       order.Request.Quantity.Sub(orderData.RemainingSize),
-						ID:           order.ID,
-						Request:      order.Request,
-						Status:       status,
-					}
+			for _, wrapper := range svc.orderStreams {
+				if wrapper.dto.ID == orderData.OrderID {
+					wrapper.stream <- orderData.ToDTO(wrapper.dto)
 				}
 			}
 			svc.orderMtx.RUnlock()
+
+			// Update working orders
+			svc.log.Debug("adding order open data to working orders")
+			svc.updateWorkingOrders(orderData.OrderID, orderData)
 		}
 	}
 }
@@ -322,26 +369,16 @@ func (svc *streamSvc) orderDoneStreamSink() {
 		case orderData := <-svc.orderDoneHandler.Output():
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order done data to streams")
-			for order, stream := range svc.orderStreams {
-				if order.ID == orderData.OrderID {
-					var status types.OrderStatus
-					if orderData.Reason == "filled" {
-						status = ord.Filled
-					}
-					if orderData.Reason == "cancelled" {
-						status = ord.Canceled
-					}
-					stream <- types.OrderDTO{
-						Market:       order.Market,
-						CreationTime: order.CreationTime,
-						Filled:       order.Request.Quantity.Sub(orderData.RemainingSize),
-						ID:           order.ID,
-						Request:      order.Request,
-						Status:       status,
-					}
+			for _, wrapper := range svc.orderStreams {
+				if wrapper.dto.ID == orderData.OrderID {
+					wrapper.stream <- orderData.ToDTO(wrapper.dto)
 				}
 			}
 			svc.orderMtx.RUnlock()
+
+			// Update working orders
+			svc.log.Debug("adding order done data to working orders")
+			svc.updateWorkingOrders(orderData.OrderID, orderData)
 		}
 	}
 }
@@ -354,19 +391,39 @@ func (svc *streamSvc) orderMatchStreamSink() {
 		case orderData := <-svc.orderMatchHandler.Output():
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order match data to streams")
-			for order, stream := range svc.orderStreams {
-				if order.ID == orderData.OrderID {
-					stream <- types.OrderDTO{
-						Market:       order.Market,
-						CreationTime: order.CreationTime,
-						Filled:       order.Filled,
-						ID:           order.ID,
-						Request:      order.Request,
-						Status:       ord.Partial,
-					}
+			for _, wrapper := range svc.orderStreams {
+				if wrapper.dto.ID == orderData.MakerOrderID || wrapper.dto.ID == orderData.TakerOrderID {
+					wrapper.stream <- orderData.ToDTO(wrapper.dto)
 				}
 			}
 			svc.orderMtx.RUnlock()
+
+			// Update working orders
+			svc.log.Debug("adding order match data to working orders")
+			svc.updateWorkingOrders(orderData.MakerOrderID, orderData)
+			svc.updateWorkingOrders(orderData.TakerOrderID, orderData)
+		}
+	}
+}
+
+func (svc *streamSvc) orderChangeStreamSink() {
+	for {
+		select {
+		case <-svc.stop:
+			return
+		case orderData := <-svc.orderChangeHandler.Output():
+			svc.orderMtx.RLock()
+			svc.log.Debug("sending order change data to streams")
+			for _, wrapper := range svc.orderStreams {
+				if wrapper.dto.ID == orderData.OrderID {
+					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+				}
+			}
+			svc.orderMtx.RUnlock()
+
+			// Update working orders
+			svc.log.Debug("adding order change data to working orders")
+			svc.updateWorkingOrders(orderData.OrderID, orderData)
 		}
 	}
 }

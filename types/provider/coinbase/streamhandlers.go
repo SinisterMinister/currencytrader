@@ -212,7 +212,7 @@ type orderMatchHandler struct {
 func newOrderMatchHandler(stop <-chan bool) *orderMatchHandler {
 	handler := &orderMatchHandler{
 		input:  make(chan DataPackage),
-		output: make(chan Done),
+		output: make(chan Match),
 		log:    log.WithField("source", "coinbase.orderMatchHandler"),
 	}
 
@@ -246,6 +246,55 @@ func (h *orderMatchHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order match data")
+			h.output <- order
+		}
+	}
+}
+
+type orderChangeHandler struct {
+	input  chan DataPackage
+	output chan Change
+
+	log log.Entry
+}
+
+func newOrderChangeHandler(stop <-chan bool) *orderChangeHandler {
+	handler := &orderChangeHandler{
+		input:  make(chan DataPackage),
+		output: make(chan Change),
+		log:    log.WithField("source", "coinbase.orderChangeHandler"),
+	}
+
+	go handler.process(stop)
+
+	return handler
+}
+
+func (h *orderChangeHandler) Input() chan<- DataPackage {
+	return h.input
+}
+
+func (h *orderChangeHandler) Output() <-chan Change {
+	return h.output
+}
+
+func (h *orderChangeHandler) process(stop <-chan bool) {
+	h.log.Debug("starting order change handler")
+	for {
+		select {
+		case <-stop:
+			// Time to stop
+			h.log.Debug("stopping order change handler")
+			return
+		case pkg := <-h.input:
+			// Process data
+			var order Change
+			h.log.Debug("parsing order change data")
+			if err := json.Unmarshal(pkg.Data, &order); err != nil {
+				h.log.WithError(err).Error("could not parse order change data")
+			}
+
+			h.log.Debug("sending order change data")
 			h.output <- order
 		}
 	}

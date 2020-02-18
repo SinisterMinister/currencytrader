@@ -21,6 +21,9 @@ const (
 	// Expired is for order that expired
 	Expired types.OrderStatus = "EXPIRED"
 
+	// Updated is for orders that have been updated
+	Updated types.OrderStatus = "UPDATED"
+
 	// Unknown is for an order that is of unknown status
 	Unknown types.OrderStatus = "UNKNOWN"
 )

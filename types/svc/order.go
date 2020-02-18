@@ -19,6 +19,7 @@ type order struct {
 	mutex   sync.RWMutex
 	running sync.Once
 	stop    chan bool
+	working []*types.Order
 }
 
 func NewOrder(trader internal.Trader) types.OrderSvc {

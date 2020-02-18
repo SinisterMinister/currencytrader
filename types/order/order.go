@@ -108,8 +108,12 @@ func (o *order) deregisterStream(stream chan types.OrderStatus) {
 func (o *order) Update(dto types.OrderDTO) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	o.dto.Status = dto.Status
-	o.dto.Filled = dto.Filled
+	switch dto.Status {
+	default:
+		o.dto = dto
+	case Partial:
+		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
+	}
 	o.broadcastToStreams(dto.Status)
 }
 
