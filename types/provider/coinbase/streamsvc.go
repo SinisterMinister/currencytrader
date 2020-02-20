@@ -40,6 +40,7 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 		wsSvc:         wsSvc,
 		orderStreams:  make(map[<-chan bool]*orderStreamWrapper),
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
+		workingOrders: make(map[string]workingOrder),
 		log:           log.WithField("source", "coinbase.streamSvc"),
 	}
 

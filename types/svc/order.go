@@ -2,6 +2,7 @@ package svc
 
 import (
 	"sync"
+	"time"
 
 	"github.com/go-playground/log/v7"
 	"github.com/sinisterminister/currencytrader/types/market"
@@ -69,13 +70,28 @@ func (svc *order) handleOrderStream(o internal.Order) {
 		return
 	}
 
+	log.Debugf("starting the order stream for order %s", o.ID())
 	stream, err := svc.trader.Provider().OrderStream(svc.stop, o.ToDTO())
 	if err != nil {
 		log.WithError(err).Errorf("could not get order stream for order %s", o.ID())
 	}
 
+	// Watch for updates
+	timer := time.NewTimer(1 * time.Second)
 	for {
 		select {
+		case <-timer.C:
+			log.Debugf("fetching latest order status for order %s to preload stream", o.ID())
+			dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
+			if err != nil {
+				log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
+			}
+
+			// No need to watch if it's already done
+			if dto.Status == ord.Filled || dto.Status == ord.Canceled {
+				go o.Update(dto)
+				return
+			}
 		case <-svc.stop:
 			return
 		case data := <-stream:
@@ -83,7 +99,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 			case <-svc.stop:
 				return
 			default:
-				o.Update(data)
+				go o.Update(data)
 				if data.Status == ord.Filled || data.Status == ord.Canceled {
 					return
 				}

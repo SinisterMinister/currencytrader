@@ -188,7 +188,7 @@ func (d *Done) ToDTO(order types.OrderDTO) types.OrderDTO {
 	if d.Reason == "filled" {
 		status = ord.Filled
 	}
-	if d.Reason == "cancelled" {
+	if d.Reason == "canceled" {
 		status = ord.Canceled
 	}
 	return types.OrderDTO{
