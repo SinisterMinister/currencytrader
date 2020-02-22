@@ -132,6 +132,8 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 
 	// Handle updating the stream with working data if any
 	go func() {
+		svc.orderMtx.RLock()
+		defer svc.orderMtx.RUnlock()
 		if data, ok := svc.workingOrders[order.ID]; ok {
 			for _, d := range data.updates {
 				switch v := d.(type) {
