@@ -10,23 +10,30 @@ import (
 	"github.com/sinisterminister/currencytrader"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/provider/coinbase"
+	"github.com/spf13/viper"
 )
 
 func main() {
 	// Setup the console logger
 	log.AddHandler(console.New(true), log.InfoLevel, log.WarnLevel, log.ErrorLevel, log.NoticeLevel, log.FatalLevel, log.AlertLevel, log.PanicLevel)
 
-	// Setup a close channel
+	// Setup the kill switch
 	killSwitch := make(chan bool)
 
 	// Setup a coinbase client
 	client := coinbasepro.NewClient()
 
+	// Connect to sandbox
 	client.UpdateConfig(&coinbasepro.ClientConfig{
-		Key:        "f561da92e7e431717e01b81339a92240",
+		BaseURL:    "https://api-public.sandbox.pro.coinbase.com",
+		Key:        "db983743c2fa020a17502a111657b551",
 		Passphrase: "throwback",
-		Secret:     "YY7CvMVlA1/Ld9joXidr1brEc2xn9MOIacGijym7md3yv6heK9Z52IDFD7rhY3fwQvNaamZX8KcVHvAjnTpMng==",
+		Secret:     "SrHvi/n9HAcEoe/JXsaZlfok4O/hXULiK4OhoANFN5GS0odp5ciho1w1jmMXlQ40Br8G8GU6WGRPClmbQnUyEQ==",
 	})
+
+	// Setup sandbox websocket url
+	viper.Set("coinbase.websocket.url", "wss://ws-feed-public.sandbox.pro.coinbase.com")
+
 	// Start up a coinbase provider
 	provider := coinbase.New(killSwitch, client)
 

@@ -5,6 +5,7 @@ import (
 	"os/signal"
 
 	"github.com/go-playground/log/v7"
+	"github.com/go-playground/log/v7/handlers/console"
 	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types/order"
@@ -16,10 +17,10 @@ import (
 )
 
 func main() {
-	// // Setup the console logger
-	// log.AddHandler(console.New(true), log.InfoLevel, log.WarnLevel, log.ErrorLevel, log.NoticeLevel, log.FatalLevel, log.AlertLevel, log.PanicLevel)
+	// Setup the console logger
+	log.AddHandler(console.New(true), log.InfoLevel, log.WarnLevel, log.ErrorLevel, log.NoticeLevel, log.FatalLevel, log.AlertLevel, log.PanicLevel)
 
-	// Setup a close channel
+	// Setup the kill switch
 	killSwitch := make(chan bool)
 
 	// Setup a coinbase client
@@ -63,11 +64,11 @@ func main() {
 	// Let the user know what happened
 	log.Warn("Received an interrupt signal! Shutting down!")
 
-	// Kill the streams
-	close(killSwitch)
-
 	// Shutdown the trader
 	trader.Stop()
+
+	// Kill the provider
+	close(killSwitch)
 }
 
 func placeOrders(stop <-chan bool, mkt types.Market) {
