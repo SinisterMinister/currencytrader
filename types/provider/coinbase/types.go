@@ -140,6 +140,9 @@ func (r *Received) ToDTO(order types.OrderDTO) types.OrderDTO {
 		ID:           r.OrderID,
 		Request:      order.Request,
 		Status:       ord.Pending,
+		Fees:         order.Fees,
+		FeesSide:     order.FeesSide,
+		Paid:         order.Paid,
 	}
 }
 
@@ -164,10 +167,13 @@ func (o *Open) ToDTO(order types.OrderDTO) types.OrderDTO {
 	return types.OrderDTO{
 		Market:       order.Market,
 		CreationTime: order.CreationTime,
-		Filled:       order.Request.Quantity.Sub(o.RemainingSize),
+		Filled:       decimal.Zero, // We fill zero here since a match event will cover the actual amount(s)
 		ID:           order.ID,
 		Request:      order.Request,
 		Status:       status,
+		Fees:         order.Fees,
+		FeesSide:     order.FeesSide,
+		Paid:         order.Paid,
 	}
 }
 
@@ -185,10 +191,10 @@ type Done struct {
 
 func (d *Done) ToDTO(order types.OrderDTO) types.OrderDTO {
 	var status types.OrderStatus
-	if d.Reason == "filled" {
+	switch d.Reason {
+	case "filled":
 		status = ord.Filled
-	}
-	if d.Reason == "canceled" {
+	case "canceled":
 		status = ord.Canceled
 	}
 	return types.OrderDTO{
@@ -198,6 +204,9 @@ func (d *Done) ToDTO(order types.OrderDTO) types.OrderDTO {
 		ID:           order.ID,
 		Request:      order.Request,
 		Status:       status,
+		Fees:         order.Fees,
+		FeesSide:     order.FeesSide,
+		Paid:         order.Paid,
 	}
 }
 
@@ -226,6 +235,9 @@ func (m *Match) ToDTO(order types.OrderDTO) types.OrderDTO {
 		ID:           order.ID,
 		Request:      order.Request,
 		Status:       ord.Partial,
+		Fees:         order.Fees,
+		FeesSide:     order.FeesSide,
+		Paid:         order.Paid,
 	}
 }
 
@@ -254,6 +266,9 @@ func (c *Change) ToDTO(order types.OrderDTO) types.OrderDTO {
 		ID:           order.ID,
 		Request:      request,
 		Status:       ord.Updated,
+		Fees:         order.Fees,
+		FeesSide:     order.FeesSide,
+		Paid:         order.Paid,
 	}
 }
 

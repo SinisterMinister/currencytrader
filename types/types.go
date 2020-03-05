@@ -84,9 +84,11 @@ type MarketSvc interface {
 
 type Order interface {
 	CreationTime() time.Time
+	Fees() (OrderSide, decimal.Decimal)
 	Filled() decimal.Decimal
 	ID() string
 	Market() Market
+	Paid() decimal.Decimal
 	Request() OrderRequest
 	Status() OrderStatus
 	StatusStream(stop <-chan bool) <-chan OrderStatus
@@ -96,8 +98,11 @@ type Order interface {
 type OrderDTO struct {
 	Market       MarketDTO
 	CreationTime time.Time
+	Fees         decimal.Decimal
+	FeesSide     OrderSide
 	Filled       decimal.Decimal
 	ID           string
+	Paid         decimal.Decimal
 	Request      OrderRequestDTO
 	Status       OrderStatus
 }

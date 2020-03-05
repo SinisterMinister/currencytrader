@@ -47,10 +47,22 @@ func (o *order) Request() types.OrderRequest {
 	return NewRequestFromDTO(market.New(o.trader, o.dto.Market), o.dto.Request)
 }
 
+func (o *order) Fees() (types.OrderSide, decimal.Decimal) {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return o.dto.FeesSide, o.dto.Fees
+}
+
 func (o *order) Filled() decimal.Decimal {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return o.dto.Filled
+}
+
+func (o *order) Paid() decimal.Decimal {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return o.dto.Paid
 }
 
 func (o *order) Status() types.OrderStatus {

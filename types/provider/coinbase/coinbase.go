@@ -164,6 +164,12 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 		Quantity: decimal.RequireFromString(raw.Size),
 	}
 	ord.Market = market
+	ord.Fees = decimal.RequireFromString(raw.FillFees)
+	if raw.Funds != "" {
+		ord.Paid = decimal.RequireFromString(raw.Funds).Add(ord.Fees)
+	} else {
+		ord.Paid = decimal.Zero
+	}
 	return
 }
 
