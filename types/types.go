@@ -208,6 +208,8 @@ type WalletDTO struct {
 }
 
 type WalletSvc interface {
+	Currency(name string) (Currency, error)
+	Currencies() ([]Currency, error)
 	Wallet(currency Currency) (Wallet, error)
 	Wallets() []Wallet
 }

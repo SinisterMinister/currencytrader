@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/sinisterminister/currencytrader/types/currency"
 	wal "github.com/sinisterminister/currencytrader/types/wallet"
 
 	"github.com/go-playground/log/v7"
@@ -36,6 +37,35 @@ func (w *wallet) Stop() {
 	w.mutex.Lock()
 	close(w.stop)
 	w.mutex.Unlock()
+}
+
+func (w *wallet) Currency(name string) (currency types.Currency, err error) {
+	currencies, err := w.Currencies()
+	if err != nil {
+		return
+	}
+
+	for _, cur := range currencies {
+		if cur.Name() == name {
+			return cur, nil
+		}
+	}
+	return
+}
+
+func (w *wallet) Currencies() (currencies []types.Currency, err error) {
+	dtos, err := w.trader.Provider().Currencies()
+	if err != nil {
+		return
+	}
+
+	// Convert the currencies
+	currencies = []types.Currency{}
+	for _, dto := range dtos {
+		currencies = append(currencies, currency.New(dto))
+	}
+
+	return
 }
 
 func (w *wallet) Wallet(currency types.Currency) (wal types.Wallet, err error) {
