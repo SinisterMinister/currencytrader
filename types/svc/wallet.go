@@ -46,7 +46,7 @@ func (w *wallet) Currency(name string) (currency types.Currency, err error) {
 	}
 
 	for _, cur := range currencies {
-		if cur.Name() == name {
+		if cur.Symbol() == name {
 			return cur, nil
 		}
 	}

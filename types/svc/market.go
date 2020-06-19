@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-playground/log/v7"
-	"github.com/google/go-cmp/cmp"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	"github.com/sinisterminister/currencytrader/types/market"
@@ -32,13 +31,14 @@ func NewMarket(trader internal.Trader) internal.MarketSvc {
 func (m *Market) Market(cur0 types.Currency, cur1 types.Currency) (market types.Market, err error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
+	m.updateMarkets()
 	for _, mkt := range m.markets {
-		if cmp.Equal(mkt.BaseCurrency, cur0) && cmp.Equal(mkt.QuoteCurrency, cur1) {
+		if mkt.BaseCurrency().Name() == cur0.Name() && mkt.QuoteCurrency().Name() == cur1.Name() {
 			market = mkt
 			return
 		}
 
-		if cmp.Equal(mkt.BaseCurrency, cur1) && cmp.Equal(mkt.QuoteCurrency, cur0) {
+		if mkt.BaseCurrency() == cur1 && mkt.QuoteCurrency() == cur0 {
 			market = mkt
 			return
 		}
