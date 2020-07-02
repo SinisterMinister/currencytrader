@@ -38,6 +38,7 @@ type Currency interface {
 	Precision() int
 	Increment() decimal.Decimal
 	Symbol() string
+	Wallet() Wallet
 	ToDTO() CurrencyDTO
 }
 
@@ -148,9 +149,8 @@ type Provider interface {
 	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
 	Ticker(market MarketDTO) (TickerDTO, error)
 	TickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
-	Wallet(id string) (WalletDTO, error)
+	Wallet(currency CurrencyDTO) (WalletDTO, error)
 	Wallets() ([]WalletDTO, error)
-	WalletStream(stop <-chan bool, wal WalletDTO) (<-chan WalletDTO, error)
 }
 
 type Trader interface {
@@ -211,5 +211,5 @@ type WalletSvc interface {
 	Currency(name string) (Currency, error)
 	Currencies() ([]Currency, error)
 	Wallet(currency Currency) (Wallet, error)
-	Wallets() []Wallet
+	Wallets() ([]Wallet, error)
 }

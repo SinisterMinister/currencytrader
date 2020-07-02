@@ -13,7 +13,6 @@ type TickerSvc interface {
 
 type WalletSvc interface {
 	types.WalletSvc
-	types.Administerable
 }
 
 type Wallet interface {

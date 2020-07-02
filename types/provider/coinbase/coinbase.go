@@ -20,6 +20,7 @@ type provider struct {
 	client        *coinbasepro.Client
 	currencies    map[string]types.CurrencyDTO
 	socketStreams map[string]chan interface{}
+	accounts      map[string]string
 }
 
 func New(stop <-chan bool, client *coinbasepro.Client) types.Provider {
@@ -35,6 +36,7 @@ func New(stop <-chan bool, client *coinbasepro.Client) types.Provider {
 		client:     client,
 		currencies: make(map[string]types.CurrencyDTO),
 		streamSvc:  svc,
+		accounts:   make(map[string]string),
 	}
 
 	provider.refreshCaches()
@@ -196,8 +198,8 @@ func (p *provider) TickerStream(stop <-chan bool, market types.MarketDTO) (strea
 	return p.streamSvc.TickerStream(stop, market)
 }
 
-func (p *provider) Wallet(id string) (wal types.WalletDTO, err error) {
-	acct, err := p.client.GetAccount(id)
+func (p *provider) Wallet(currency types.CurrencyDTO) (wal types.WalletDTO, err error) {
+	acct, err := p.client.GetAccount(p.accounts[currency.Symbol])
 	if err != nil {
 		return
 	}
@@ -228,44 +230,6 @@ func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
 	return
 }
 
-// TODO: refactor to not make a request every second for every wallet. Maybe use all wallets call instead so it's only 1 call a sec
-func (p *provider) WalletStream(stop <-chan bool, wal types.WalletDTO) (stream <-chan types.WalletDTO, err error) {
-	// Make sure the wallet exists
-	_, err = p.Wallet(wal.ID)
-	if err != nil {
-		return
-	}
-
-	// Create the stream
-	rawStream := make(chan types.WalletDTO)
-	stream = rawStream
-
-	// Start up the stream handler
-	go func(stop <-chan bool, wal types.WalletDTO, stream chan types.WalletDTO) {
-		ticker := time.NewTicker(1 * time.Second)
-		for {
-			select {
-			case <-stop:
-				return
-			default:
-			}
-
-			select {
-			case <-stop:
-				return
-			case <-ticker.C:
-				dto, _ := p.Wallet(wal.ID)
-				select {
-				case stream <- dto:
-				default:
-					log.Warnf("skipping blocked stream for wallet %s", wal.ID)
-				}
-			}
-		}
-	}(stop, wal, rawStream)
-	return
-}
-
 func (p *provider) refreshCaches() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -277,6 +241,15 @@ func (p *provider) refreshCaches() {
 	}
 	for _, cur := range curs {
 		p.currencies[cur.Symbol] = cur
+	}
+
+	accts, err := p.client.GetAccounts()
+	if err != nil {
+		log.WithError(err).Error("Failed fetching accounts")
+		return
+	}
+	for _, acct := range accts {
+		p.accounts[acct.Currency] = acct.ID
 	}
 }
 

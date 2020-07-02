@@ -31,9 +31,9 @@ func New(trader internal.Trader, m types.MarketDTO) types.Market {
 
 func (m *market) Name() string { return m.dto.Name }
 
-func (m *market) BaseCurrency() types.Currency { return currency.New(m.dto.BaseCurrency) }
+func (m *market) BaseCurrency() types.Currency { return currency.New(m.trader, m.dto.BaseCurrency) }
 
-func (m *market) QuoteCurrency() types.Currency { return currency.New(m.dto.QuoteCurrency) }
+func (m *market) QuoteCurrency() types.Currency { return currency.New(m.trader, m.dto.QuoteCurrency) }
 
 func (m *market) MinPrice() decimal.Decimal { return m.dto.MinPrice }
 
