@@ -11,8 +11,8 @@ type TickerSvc interface {
 	types.Administerable
 }
 
-type WalletSvc interface {
-	types.WalletSvc
+type AccountSvc interface {
+	types.AccountSvc
 }
 
 type Wallet interface {
@@ -28,7 +28,7 @@ type Order interface {
 type Trader interface {
 	types.Administerable
 	OrderSvc() types.OrderSvc
-	WalletSvc() types.WalletSvc
+	AccountSvc() types.AccountSvc
 	MarketSvc() types.MarketSvc
 	TickerSvc() types.TickerSvc
 	Provider() types.Provider

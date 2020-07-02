@@ -6,6 +6,14 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type AccountSvc interface {
+	Currency(name string) (Currency, error)
+	Currencies() ([]Currency, error)
+	Fees() (Fees, error)
+	Wallet(currency Currency) (Wallet, error)
+	Wallets() ([]Wallet, error)
+}
+
 type Administerable interface {
 	Start()
 	Stop()
@@ -47,6 +55,19 @@ type CurrencyDTO struct {
 	Name      string
 	Precision int
 	Symbol    string
+}
+
+type Fees interface {
+	MakerRate() decimal.Decimal
+	TakerRate() decimal.Decimal
+	Volume() decimal.Decimal
+	ToDTO() FeesDTO
+}
+
+type FeesDTO struct {
+	MakerRate decimal.Decimal
+	TakerRate decimal.Decimal
+	Volume    decimal.Decimal
 }
 
 type Market interface {
@@ -144,6 +165,7 @@ type Provider interface {
 	CancelOrder(order OrderDTO) error
 	Candles(mkt MarketDTO, interval CandleInterval, start time.Time, end time.Time) ([]CandleDTO, error)
 	Currencies() ([]CurrencyDTO, error)
+	Fees() (FeesDTO, error)
 	Markets() ([]MarketDTO, error)
 	Order(markest MarketDTO, id string) (OrderDTO, error)
 	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
@@ -156,10 +178,10 @@ type Provider interface {
 type Trader interface {
 	Administerable
 
+	AccountSvc() AccountSvc
 	MarketSvc() MarketSvc
 	OrderSvc() OrderSvc
 	TickerSvc() TickerSvc
-	WalletSvc() WalletSvc
 }
 
 type Ticker interface {
@@ -205,11 +227,4 @@ type WalletDTO struct {
 	ID       string
 	Locked   decimal.Decimal
 	Reserved decimal.Decimal
-}
-
-type WalletSvc interface {
-	Currency(name string) (Currency, error)
-	Currencies() ([]Currency, error)
-	Wallet(currency Currency) (Wallet, error)
-	Wallets() ([]Wallet, error)
 }

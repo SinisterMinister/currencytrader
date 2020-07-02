@@ -28,7 +28,7 @@ func (c *currency) Precision() int { return c.dto.Precision }
 func (c *currency) ToDTO() types.CurrencyDTO { return c.dto }
 
 func (c *currency) Wallet() types.Wallet {
-	wallet, err := c.trader.WalletSvc().Wallet(c)
+	wallet, err := c.trader.AccountSvc().Wallet(c)
 	if err != nil {
 		log.WithField("currency", c.dto).WithError(err).Fatal("was unable to retrieve wallet from service")
 	}

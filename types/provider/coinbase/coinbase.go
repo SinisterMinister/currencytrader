@@ -11,19 +11,20 @@ import (
 
 	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/sinisterminister/currencytrader/types"
+	providerclient "github.com/sinisterminister/currencytrader/types/provider/coinbase/client"
 )
 
 type provider struct {
 	streamSvc *streamSvc
 
 	mutex         sync.Mutex
-	client        *coinbasepro.Client
+	client        *providerclient.Client
 	currencies    map[string]types.CurrencyDTO
 	socketStreams map[string]chan interface{}
 	accounts      map[string]string
 }
 
-func New(stop <-chan bool, client *coinbasepro.Client) types.Provider {
+func New(stop <-chan bool, client *providerclient.Client) types.Provider {
 	// Instantiate websocket handler
 	wssvc, err := newWebsocketSvc(stop)
 	if err != nil {
@@ -121,6 +122,20 @@ func (p *provider) Currencies() (curs []types.CurrencyDTO, err error) {
 			Precision: strings.Index(rc.MinSize, "1") - 1,
 			Increment: decimal.RequireFromString(rc.MinSize),
 		})
+	}
+	return
+}
+
+func (p *provider) Fees() (fees types.FeesDTO, err error) {
+	rawFees, err := p.client.GetFees()
+	if err != nil {
+		return
+	}
+
+	fees = types.FeesDTO{
+		MakerRate: rawFees.MakerRate,
+		TakerRate: rawFees.TakerRate,
+		Volume:    rawFees.Volume,
 	}
 	return
 }

@@ -9,11 +9,11 @@ import (
 )
 
 type trader struct {
-	provider  types.Provider
-	marketSvc internal.MarketSvc
-	tickerSvc internal.TickerSvc
-	walletSvc internal.WalletSvc
-	orderSvc  types.OrderSvc
+	provider   types.Provider
+	marketSvc  internal.MarketSvc
+	tickerSvc  internal.TickerSvc
+	accountSvc internal.AccountSvc
+	orderSvc   types.OrderSvc
 
 	mutex   sync.RWMutex
 	stop    chan bool
@@ -26,9 +26,9 @@ func New(provider types.Provider) internal.Trader {
 		stop:     make(chan bool),
 	}
 
+	t.accountSvc = svc.NewAccount(t)
 	t.marketSvc = svc.NewMarket(t)
 	t.tickerSvc = svc.NewTicker(t)
-	t.walletSvc = svc.NewWallet(t)
 	t.orderSvc = svc.NewOrder(t)
 	return t
 }
@@ -65,8 +65,8 @@ func (t *trader) OrderSvc() types.OrderSvc {
 	return t.orderSvc
 }
 
-func (t *trader) WalletSvc() types.WalletSvc {
-	return t.walletSvc
+func (t *trader) AccountSvc() types.AccountSvc {
+	return t.accountSvc
 }
 
 func (t *trader) MarketSvc() types.MarketSvc {
