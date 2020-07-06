@@ -69,7 +69,7 @@ func (svc *accountSvc) Fees() (types.Fees, error) {
 		svc.feeValid.Add(5 * time.Minute)
 	}
 
-	return svc.feeCache
+	return svc.feeCache, nil
 }
 
 func (svc *accountSvc) Wallet(currency types.Currency) (wal types.Wallet, err error) {
