@@ -1,6 +1,9 @@
 package svc
 
 import (
+	"sync"
+	"time"
+
 	"github.com/sinisterminister/currencytrader/types/currency"
 	"github.com/sinisterminister/currencytrader/types/fees"
 	"github.com/sinisterminister/currencytrader/types/wallet"
@@ -11,6 +14,10 @@ import (
 
 type accountSvc struct {
 	trader internal.Trader
+
+	mutex    sync.Mutex
+	feeCache types.Fees
+	feeValid time.Time
 }
 
 func NewAccount(trader internal.Trader) internal.AccountSvc {
@@ -49,12 +56,20 @@ func (svc *accountSvc) Currencies() (currencies []types.Currency, err error) {
 }
 
 func (svc *accountSvc) Fees() (types.Fees, error) {
-	dto, err := svc.trader.Provider().Fees()
-	if err != nil {
-		return nil, err
+	svc.mutex.Lock()
+	defer svc.mutex.Unlock()
+	if svc.feeCache == nil || time.Now().After(svc.feeValid) {
+		dto, err := svc.trader.Provider().Fees()
+		if err != nil {
+			return nil, err
+		}
+		svc.feeCache = fees.New(svc.trader, dto)
+
+		// Cache the fees for 5 minutes
+		svc.feeValid.Add(5 * time.Minute)
 	}
 
-	return fees.New(svc.trader, dto), err
+	return svc.feeCache
 }
 
 func (svc *accountSvc) Wallet(currency types.Currency) (wal types.Wallet, err error) {
