@@ -70,6 +70,29 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 	return
 }
 
+func (p *provider) AverageTradeVolume(mkt types.MarketDTO) (decimal.Decimal, error) {
+	var trades, buffer []coinbasepro.Trade
+	trades = []coinbasepro.Trade{}
+
+	// Get the trades
+	cursor := p.client.ListTrades(mkt.Name)
+	for cursor.HasMore {
+		if err := cursor.NextPage(&buffer); err != nil {
+			for _, t := range trades {
+				trades = append(trades, t)
+			}
+		}
+	}
+
+	// Get the average volume for the trades
+	avg := decimal.Zero
+	for i, t := range trades {
+		avg = avg.Mul(decimal.NewFromFloat(float64(i))).Add(decimal.RequireFromString(t.Size)).Div(decimal.NewFromFloat(float64(i + 1)))
+	}
+
+	return avg, nil
+}
+
 func (p *provider) CancelOrder(ord types.OrderDTO) (err error) {
 	err = p.client.CancelOrder(ord.ID)
 	return

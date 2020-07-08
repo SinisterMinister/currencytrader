@@ -131,7 +131,7 @@ func (svc *websocketSvc) handleSubscriptions() {
 }
 
 func (svc *websocketSvc) initializeConnection() (err error) {
-	url := viper.GetString("coinbase.websocket.url")
+	url := viper.GetString("coinbase.websocketURL")
 	svc.log.Debugf("connecting to %s", url)
 
 	svc.connRMtx.Lock()

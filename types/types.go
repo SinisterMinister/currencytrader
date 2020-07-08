@@ -71,7 +71,8 @@ type FeesDTO struct {
 }
 
 type Market interface {
-	AttemptOrder(oType OrderType, side OrderSide, price decimal.Decimal, quantity decimal.Decimal) (Order, error)
+	AttemptOrder(req OrderRequest) (Order, error)
+	AverageTradeVolume() (decimal.Decimal, error)
 	BaseCurrency() Currency
 	Candles(interval CandleInterval, start time.Time, end time.Time) ([]Candle, error)
 	MaxPrice() decimal.Decimal
@@ -106,9 +107,11 @@ type MarketSvc interface {
 
 type Order interface {
 	CreationTime() time.Time
+	Done() <-chan bool
 	Fees() (OrderSide, decimal.Decimal)
 	Filled() decimal.Decimal
 	ID() string
+	IsDone() bool
 	Market() Market
 	Paid() decimal.Decimal
 	Request() OrderRequest
@@ -162,6 +165,7 @@ type OrderSvc interface {
 
 type Provider interface {
 	AttemptOrder(req OrderRequestDTO) (OrderDTO, error)
+	AverageTradeVolume(mkt MarketDTO) (decimal.Decimal, error)
 	CancelOrder(order OrderDTO) error
 	Candles(mkt MarketDTO, interval CandleInterval, start time.Time, end time.Time) ([]CandleDTO, error)
 	Currencies() ([]CurrencyDTO, error)

@@ -19,14 +19,30 @@ type order struct {
 	mutex   sync.RWMutex
 	dto     types.OrderDTO
 	streams []chan types.OrderStatus
+	done    chan bool
 }
 
 func NewOrder(trader internal.Trader, dto types.OrderDTO) internal.Order {
-	return &order{
+	ord := &order{
 		trader: trader,
 		dto:    dto,
 		log:    log.WithField("source", "currencytrader.order"),
+		done:   make(chan bool),
 	}
+
+	// Close the done channel if the order is already closed
+	switch ord.Status() {
+	case Filled:
+		fallthrough
+	case Canceled:
+		fallthrough
+	case Expired:
+		fallthrough
+	case Rejected:
+		close(ord.done)
+	}
+
+	return ord
 }
 
 func (o *order) CreationTime() time.Time {
@@ -84,6 +100,24 @@ func (o *order) StatusStream(stop <-chan bool) <-chan types.OrderStatus {
 	return stream
 }
 
+func (o *order) IsDone() bool {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+
+	select {
+	case <-o.done:
+		return true
+	default:
+		return false
+	}
+}
+
+func (o *order) Done() <-chan bool {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return o.done
+}
+
 func (o *order) registerStream(stop <-chan bool, stream chan types.OrderStatus) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -125,12 +159,24 @@ func (o *order) Update(dto types.OrderDTO) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	switch dto.Status {
-	default:
-		o.dto = dto
 	case Partial:
 		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
+	case Filled:
+		fallthrough
+	case Canceled:
+		fallthrough
+	case Expired:
+		fallthrough
+	case Rejected:
+		// Close the done channel as the
+		close(o.done)
+		fallthrough
+	default:
+		o.dto = dto
 	}
 	go o.broadcastToStreams(dto.Status)
+
+	// TODO: close streams
 }
 
 func (o *order) broadcastToStreams(status types.OrderStatus) {
@@ -159,4 +205,8 @@ func (o *order) broadcastToStreams(status types.OrderStatus) {
 
 func (o *order) ToDTO() types.OrderDTO {
 	return o.dto
+}
+
+func (o *order) watchOrderStatus() {
+
 }

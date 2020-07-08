@@ -69,6 +69,14 @@ func (m *market) Candles(interval types.CandleInterval, start time.Time, end tim
 	return candles, nil
 }
 
-func (m *market) AttemptOrder(t types.OrderType, s types.OrderSide, p decimal.Decimal, q decimal.Decimal) (types.Order, error) {
-	return m.trader.OrderSvc().AttemptOrder(m, t, s, p, q)
+func (m *market) AttemptOrder(req types.OrderRequest) (types.Order, error) {
+	return m.trader.OrderSvc().AttemptOrder(m, req.Type(), req.Side(), req.Price(), req.Quantity())
+}
+
+func (m *market) AverageTradeVolume() (decimal.Decimal, error) {
+	vol, err := m.trader.Provider().AverageTradeVolume(m.ToDTO())
+	if err != nil {
+		return decimal.Zero, err
+	}
+	return vol, nil
 }

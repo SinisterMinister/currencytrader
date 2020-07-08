@@ -66,7 +66,15 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 
 func (svc *order) handleOrderStream(o internal.Order) {
 	// Bail if the order is already closed
-	if o.Status() == ord.Filled || o.Status() == ord.Canceled {
+	switch o.Status() {
+	case ord.Filled:
+		fallthrough
+	case ord.Canceled:
+		fallthrough
+	case ord.Expired:
+		fallthrough
+	case ord.Rejected:
+		log.Info("bailing on order stream")
 		return
 	}
 
