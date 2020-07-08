@@ -180,8 +180,8 @@ func (o *order) Update(dto types.OrderDTO) {
 }
 
 func (o *order) broadcastToStreams(status types.OrderStatus) {
-	o.log.Debugf("broadcasting status %s to streams for order %s", o.dto.Status, o.dto.ID)
 	o.mutex.RLock()
+	o.log.Debugf("broadcasting status %s to streams for order %s", o.dto.Status, o.dto.ID)
 	streams := o.streams[:0]
 	for _, stream := range o.streams {
 		select {
