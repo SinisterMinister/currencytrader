@@ -16,6 +16,10 @@ func New(trader internal.Trader, dto types.FeesDTO) types.Fees {
 	return &fees{trader, dto}
 }
 
+func ZeroFee() types.Fees {
+	return &fees{dto: types.FeesDTO{}}
+}
+
 func (f *fees) MakerRate() decimal.Decimal { return f.dto.MakerRate }
 
 func (f *fees) TakerRate() decimal.Decimal { return f.dto.TakerRate }

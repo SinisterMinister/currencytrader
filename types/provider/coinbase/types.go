@@ -228,13 +228,15 @@ type Match struct {
 }
 
 func (m *Match) ToDTO(order types.OrderDTO) types.OrderDTO {
+	var status types.OrderStatus
+	status = ord.Partial
 	return types.OrderDTO{
 		Market:       order.Market,
 		CreationTime: order.CreationTime,
 		Filled:       m.Size,
 		ID:           order.ID,
 		Request:      order.Request,
-		Status:       ord.Partial,
+		Status:       status,
 		Fees:         order.Fees,
 		FeesSide:     order.FeesSide,
 		Paid:         order.Paid,

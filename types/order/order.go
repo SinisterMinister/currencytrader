@@ -31,7 +31,7 @@ func NewOrder(trader internal.Trader, dto types.OrderDTO) internal.Order {
 	}
 
 	// Close the done channel if the order is already closed
-	switch ord.Status() {
+	switch dto.Status {
 	case Filled:
 		fallthrough
 	case Canceled:
@@ -159,8 +159,6 @@ func (o *order) Update(dto types.OrderDTO) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	switch dto.Status {
-	case Partial:
-		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
 	case Filled:
 		fallthrough
 	case Canceled:
@@ -170,6 +168,9 @@ func (o *order) Update(dto types.OrderDTO) {
 	case Rejected:
 		// Close the done channel as the
 		close(o.done)
+		fallthrough
+	case Partial:
+		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
 		fallthrough
 	default:
 		o.dto = dto
@@ -181,7 +182,7 @@ func (o *order) Update(dto types.OrderDTO) {
 
 func (o *order) broadcastToStreams(status types.OrderStatus) {
 	o.mutex.RLock()
-	o.log.Debugf("broadcasting status %s to streams for order %s", o.dto.Status, o.dto.ID)
+	o.log.Debugf("broadcasting status %s to streams for order %s", status, o.dto.ID)
 	streams := o.streams[:0]
 	for _, stream := range o.streams {
 		select {

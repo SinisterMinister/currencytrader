@@ -93,12 +93,18 @@ func (svc *order) handleOrderStream(o internal.Order) {
 			dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
 			if err != nil {
 				log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
+				dto = o.ToDTO()
+				dto.Status = ord.Rejected
 			}
 
 			// No need to watch if it's already done
-			if dto.Status == ord.Filled || dto.Status == ord.Canceled {
+			switch dto.Status {
+			case ord.Filled:
+				fallthrough
+			case ord.Canceled:
+				fallthrough
+			case ord.Rejected:
 				go o.Update(dto)
-				return
 			}
 		case <-svc.stop:
 			return

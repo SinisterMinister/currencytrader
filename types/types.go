@@ -7,8 +7,8 @@ import (
 )
 
 type AccountSvc interface {
-	Currency(name string) (Currency, error)
 	Currencies() ([]Currency, error)
+	Currency(name string) (Currency, error)
 	Fees() (Fees, error)
 	Wallet(currency Currency) (Wallet, error)
 	Wallets() ([]Wallet, error)
@@ -42,12 +42,12 @@ type CandleInterval string
 
 // Currency TODO
 type Currency interface {
+	Increment() decimal.Decimal
 	Name() string
 	Precision() int
-	Increment() decimal.Decimal
 	Symbol() string
-	Wallet() Wallet
 	ToDTO() CurrencyDTO
+	Wallet() Wallet
 }
 
 type CurrencyDTO struct {
@@ -60,8 +60,8 @@ type CurrencyDTO struct {
 type Fees interface {
 	MakerRate() decimal.Decimal
 	TakerRate() decimal.Decimal
-	Volume() decimal.Decimal
 	ToDTO() FeesDTO
+	Volume() decimal.Decimal
 }
 
 type FeesDTO struct {
