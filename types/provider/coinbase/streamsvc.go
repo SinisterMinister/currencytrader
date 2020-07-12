@@ -330,7 +330,11 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 			svc.log.Debug("sending order received data to streams")
 			for _, wrapper := range svc.orderStreams {
 				if wrapper.dto.ID == orderData.OrderID {
-					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+					default:
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
+					}
 				}
 			}
 			svc.orderMtx.RUnlock()
@@ -352,7 +356,11 @@ func (svc *streamSvc) orderOpenStreamSink() {
 			svc.log.Debug("sending order open data to streams")
 			for _, wrapper := range svc.orderStreams {
 				if wrapper.dto.ID == orderData.OrderID {
-					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+					default:
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
+					}
 				}
 			}
 			svc.orderMtx.RUnlock()
@@ -374,7 +382,11 @@ func (svc *streamSvc) orderDoneStreamSink() {
 			svc.log.Debug("sending order done data to streams")
 			for _, wrapper := range svc.orderStreams {
 				if wrapper.dto.ID == orderData.OrderID {
-					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+					default:
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
+					}
 				}
 			}
 			svc.orderMtx.RUnlock()
@@ -396,7 +408,11 @@ func (svc *streamSvc) orderMatchStreamSink() {
 			svc.log.Debug("sending order match data to streams")
 			for _, wrapper := range svc.orderStreams {
 				if wrapper.dto.ID == orderData.MakerOrderID || wrapper.dto.ID == orderData.TakerOrderID {
-					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+					default:
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
+					}
 				}
 			}
 			svc.orderMtx.RUnlock()
@@ -419,7 +435,11 @@ func (svc *streamSvc) orderChangeStreamSink() {
 			svc.log.Debug("sending order change data to streams")
 			for _, wrapper := range svc.orderStreams {
 				if wrapper.dto.ID == orderData.OrderID {
-					wrapper.stream <- orderData.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+					default:
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
+					}
 				}
 			}
 			svc.orderMtx.RUnlock()

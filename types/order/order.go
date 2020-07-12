@@ -104,6 +104,9 @@ func (o *order) IsDone() bool {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 
+	// Refresh done first
+	o.refreshDone()
+
 	select {
 	case <-o.done:
 		return true
@@ -115,7 +118,28 @@ func (o *order) IsDone() bool {
 func (o *order) Done() <-chan bool {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
+	// Refresh done first
+	o.refreshDone()
 	return o.done
+}
+
+func (o *order) refreshDone() {
+	switch o.dto.Status {
+	case Canceled:
+		fallthrough
+	case Expired:
+		fallthrough
+	case Rejected:
+		fallthrough
+	case Filled:
+		// close the done channel if needed
+		select {
+		case <-o.done:
+		default:
+			close(o.done)
+		}
+	default:
+	}
 }
 
 func (o *order) registerStream(stop <-chan bool, stream chan types.OrderStatus) {
@@ -167,7 +191,11 @@ func (o *order) Update(dto types.OrderDTO) {
 		fallthrough
 	case Rejected:
 		// Close the done channel as the
-		close(o.done)
+		select {
+		case <-o.done:
+		default:
+			close(o.done)
+		}
 		fallthrough
 	case Partial:
 		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
@@ -206,8 +234,4 @@ func (o *order) broadcastToStreams(status types.OrderStatus) {
 
 func (o *order) ToDTO() types.OrderDTO {
 	return o.dto
-}
-
-func (o *order) watchOrderStatus() {
-
 }

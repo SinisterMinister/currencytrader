@@ -79,9 +79,11 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	}
 
 	log.Debugf("starting the order stream for order %s", o.ID())
-	stream, err := svc.trader.Provider().OrderStream(svc.stop, o.ToDTO())
+	stop := make(chan bool)
+	stream, err := svc.trader.Provider().OrderStream(stop, o.ToDTO())
 	if err != nil {
 		log.WithError(err).Errorf("could not get order stream for order %s", o.ID())
+		return
 	}
 
 	// Watch for updates
@@ -105,16 +107,21 @@ func (svc *order) handleOrderStream(o internal.Order) {
 				fallthrough
 			case ord.Rejected:
 				go o.Update(dto)
+				close(stop)
+				return
 			}
 		case <-svc.stop:
+			close(stop)
 			return
 		case data := <-stream:
 			select {
 			case <-svc.stop:
+				close(stop)
 				return
 			default:
 				go o.Update(data)
 				if data.Status == ord.Filled || data.Status == ord.Canceled {
+					close(stop)
 					return
 				}
 			}

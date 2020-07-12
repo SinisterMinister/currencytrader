@@ -50,7 +50,11 @@ func (h *tickerHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending ticker data")
-			h.output <- ticker
+			select {
+			case h.output <- ticker:
+			default:
+				log.Warn("ticker handler output channel blocked")
+			}
 		}
 	}
 }
@@ -99,7 +103,11 @@ func (h *orderReceivedHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order receieved data")
-			h.output <- order
+			select {
+			case h.output <- order:
+			default:
+				log.Warn("order received handler output channel blocked")
+			}
 		}
 	}
 }
@@ -148,7 +156,11 @@ func (h *orderOpenHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order open data")
-			h.output <- order
+			select {
+			case h.output <- order:
+			default:
+				log.Warn("order open handler output channel blocked")
+			}
 		}
 	}
 }
@@ -197,7 +209,11 @@ func (h *orderDoneHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order done data")
-			h.output <- order
+			select {
+			case h.output <- order:
+			default:
+				log.Warn("order done handler output channel blocked")
+			}
 		}
 	}
 }
@@ -246,7 +262,11 @@ func (h *orderMatchHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order match data")
-			h.output <- order
+			select {
+			case h.output <- order:
+			default:
+				log.Warn("order match handler output channel blocked")
+			}
 		}
 	}
 }
@@ -295,7 +315,11 @@ func (h *orderChangeHandler) process(stop <-chan bool) {
 			}
 
 			h.log.Debug("sending order change data")
-			h.output <- order
+			select {
+			case h.output <- order:
+			default:
+				log.Warn("order change handler output channel blocked")
+			}
 		}
 	}
 }

@@ -174,11 +174,15 @@ func (svc *websocketSvc) readConnection() {
 			}
 
 			// Send message
-			svc.incomingData <- DataPackage{
+			select {
+			case svc.incomingData <- DataPackage{
 				Data:    data,
 				Message: message,
+			}:
+				svc.messagesReceived++
+			default:
+				log.Warn("incoming data channel blocked")
 			}
-			svc.messagesReceived++
 		}
 	}
 }
@@ -205,7 +209,11 @@ func (svc *websocketSvc) processMessages() {
 			}
 
 			svc.log.Debugf("sending message to '%s' handler", pkg.Type)
-			handler.Input() <- pkg
+			select {
+			case handler.Input() <- pkg:
+			default:
+				log.Warn("handler input channel blocked")
+			}
 		}
 	}
 }
