@@ -101,6 +101,8 @@ func (svc *order) handleOrderStream(o internal.Order) {
 
 			// No need to watch if it's already done
 			switch dto.Status {
+			case ord.Unknown:
+				timer.Reset(1 * time.Second)
 			case ord.Filled:
 				fallthrough
 			case ord.Canceled:
@@ -110,6 +112,8 @@ func (svc *order) handleOrderStream(o internal.Order) {
 				close(stop)
 				return
 			}
+
+			go o.Update(dto)
 		case <-svc.stop:
 			close(stop)
 			return

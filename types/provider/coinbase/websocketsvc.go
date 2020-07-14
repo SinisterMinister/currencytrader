@@ -142,6 +142,14 @@ func (svc *websocketSvc) initializeConnection() (err error) {
 	svc.connRMtx.Unlock()
 	svc.connWMtx.Unlock()
 	svc.connection, _, err = ws.DefaultDialer.Dial(url, nil)
+
+	// Resubscribe to any previous subscriptions
+	if len(svc.subscriptions.Channels) > 0 {
+		// Build the subscribe request
+		req := Subscribe{Channels: svc.subscriptions.Channels}
+		err = svc.Subscribe(req)
+	}
+
 	return
 }
 

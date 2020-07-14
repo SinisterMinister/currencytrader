@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/go-playground/log/v7"
+	"github.com/spf13/viper"
 )
 
 type tickerHandler struct {
@@ -15,8 +16,8 @@ type tickerHandler struct {
 
 func newTickerHandler(stop <-chan bool) *tickerHandler {
 	handler := &tickerHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Ticker),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.tickerHandlerInputBufferSize")),
+		output: make(chan Ticker, viper.GetInt("coinbase.websocket.tickerHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.tickerHandler"),
 	}
 
@@ -68,8 +69,8 @@ type orderReceivedHandler struct {
 
 func newOrderReceivedHandler(stop <-chan bool) *orderReceivedHandler {
 	handler := &orderReceivedHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Received),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.orderReceivedHandlerInputBufferSize")),
+		output: make(chan Received, viper.GetInt("coinbase.websocket.orderReceivedHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.orderReceivedHandler"),
 	}
 
@@ -121,8 +122,8 @@ type orderOpenHandler struct {
 
 func newOrderOpenHandler(stop <-chan bool) *orderOpenHandler {
 	handler := &orderOpenHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Open),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.orderOpenHandlerInputBufferSize")),
+		output: make(chan Open, viper.GetInt("coinbase.websocket.orderDoneHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.orderOpenHandler"),
 	}
 
@@ -174,8 +175,8 @@ type orderDoneHandler struct {
 
 func newOrderDoneHandler(stop <-chan bool) *orderDoneHandler {
 	handler := &orderDoneHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Done),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.orderDoneHandlerInputBufferSize")),
+		output: make(chan Done, viper.GetInt("coinbase.websocket.orderDoneHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.orderDoneHandler"),
 	}
 
@@ -227,8 +228,8 @@ type orderMatchHandler struct {
 
 func newOrderMatchHandler(stop <-chan bool) *orderMatchHandler {
 	handler := &orderMatchHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Match),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.orderMatchHandlerInputBufferSize")),
+		output: make(chan Match, viper.GetInt("coinbase.websocket.orderMatchHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.orderMatchHandler"),
 	}
 
@@ -280,8 +281,8 @@ type orderChangeHandler struct {
 
 func newOrderChangeHandler(stop <-chan bool) *orderChangeHandler {
 	handler := &orderChangeHandler{
-		input:  make(chan DataPackage),
-		output: make(chan Change),
+		input:  make(chan DataPackage, viper.GetInt("coinbase.websocket.orderChangeHandlerInputBufferSize")),
+		output: make(chan Change, viper.GetInt("coinbase.websocket.orderChangeHandlerOutputBufferSize")),
 		log:    log.WithField("source", "coinbase.orderChangeHandler"),
 	}
 

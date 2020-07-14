@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/log/v7"
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/spf13/viper"
 	"github.com/thoas/go-funk"
 )
 
@@ -87,7 +88,7 @@ func (svc *streamSvc) registerOrderMatchHandler() {
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
 	// Create the stream
 	svc.log.Debugf("ticker stream request for %s", market.Name)
-	rawStream := make(chan types.TickerDTO)
+	rawStream := make(chan types.TickerDTO, viper.GetInt("coinbase.streams.tickerStreamBufferSize"))
 	stream = rawStream
 	svc.tickerMtx.Lock()
 	svc.tickerStreams[market] = rawStream
@@ -120,7 +121,7 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 	// Create the stream
 	wrapper := &orderStreamWrapper{
 		dto:    order,
-		stream: make(chan types.OrderDTO),
+		stream: make(chan types.OrderDTO, viper.GetInt("coinbase.streams.orderStreamBufferSize")),
 	}
 	stream = wrapper.stream
 	svc.orderMtx.Lock()
@@ -138,15 +139,35 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 			for _, d := range data.updates {
 				switch v := d.(type) {
 				case Received:
-					wrapper.stream <- v.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- v.ToDTO(wrapper.dto):
+					default:
+						log.Warn("wrapper stream is blocked")
+					}
 				case Open:
-					wrapper.stream <- v.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- v.ToDTO(wrapper.dto):
+					default:
+						log.Warn("wrapper stream is blocked")
+					}
 				case Done:
-					wrapper.stream <- v.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- v.ToDTO(wrapper.dto):
+					default:
+						log.Warn("wrapper stream is blocked")
+					}
 				case Match:
-					wrapper.stream <- v.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- v.ToDTO(wrapper.dto):
+					default:
+						log.Warn("wrapper stream is blocked")
+					}
 				case Change:
-					wrapper.stream <- v.ToDTO(wrapper.dto)
+					select {
+					case wrapper.stream <- v.ToDTO(wrapper.dto):
+					default:
+						log.Warn("wrapper stream is blocked")
+					}
 				}
 			}
 		}
@@ -272,7 +293,7 @@ func (svc *streamSvc) unsubscribe(channel string, productID string) {
 }
 
 func (svc *streamSvc) subscribe(channel string, productID string) {
-	// Build the unsubscribe request
+	// Build the subscribe request
 	req := Subscribe{Channels: []struct {
 		Name       string   `json:"name"`
 		ProductIDs []string `json:"product_ids"`
