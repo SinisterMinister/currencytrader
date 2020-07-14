@@ -5,6 +5,7 @@ import "github.com/spf13/viper"
 func init() {
 	viper.SetDefault("coinbase.websocketURL", "wss://ws-feed.pro.coinbase.com")
 	viper.SetDefault("coinbase.websocket.incomingDataBufferSize", 1024)
+	viper.SetDefault("coinbase.websocket.incomingSubscriptionBufferSize", 8)
 
 	viper.SetDefault("coinbase.websocket.tickerHandlerInputBufferSize", 1)
 	viper.SetDefault("coinbase.websocket.orderReceivedHandlerInputBufferSize", 1)

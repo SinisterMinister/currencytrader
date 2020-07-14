@@ -33,7 +33,7 @@ func newWebsocketSvc(stop <-chan bool) (svc *websocketSvc, err error) {
 	svc = &websocketSvc{
 		stop:                  stop,
 		incomingData:          make(chan DataPackage, viper.GetInt("coinbase.websocket.incomingDataBufferSize")),
-		incomingSubscriptions: make(chan DataPackage),
+		incomingSubscriptions: make(chan DataPackage, viper.GetInt("coinbase.websocket.incomingSubscriptionBufferSize")),
 		log:                   log.WithField("source", "coinbase.websocketSvc"),
 		messageHandlers:       make(map[string]MessageHandler),
 	}

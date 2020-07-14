@@ -91,7 +91,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	for {
 		select {
 		case <-timer.C:
-			log.Debugf("fetching latest order status for order %s to preload stream", o.ID())
+			log.Debugf("fetching latest order status for order %s for stream backup", o.ID())
 			dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
 			if err != nil {
 				log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
@@ -113,7 +113,11 @@ func (svc *order) handleOrderStream(o internal.Order) {
 				return
 			}
 
+			// Update the order
 			go o.Update(dto)
+
+			// Reset the timer as a backup to the streams
+			timer.Reset(60 * time.Second)
 		case <-svc.stop:
 			close(stop)
 			return
@@ -128,6 +132,8 @@ func (svc *order) handleOrderStream(o internal.Order) {
 					close(stop)
 					return
 				}
+				// Reset the timer as a backup to the streams
+				timer.Reset(60 * time.Second)
 			}
 		}
 	}
