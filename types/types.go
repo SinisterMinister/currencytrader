@@ -142,10 +142,10 @@ type OrderRequest interface {
 }
 
 type OrderRequestDTO struct {
-	Price    decimal.Decimal
-	Quantity decimal.Decimal
-	Side     OrderSide
-	Type     OrderType
+	Price    decimal.Decimal `json:"price"`
+	Quantity decimal.Decimal `json:"quantity"`
+	Side     OrderSide       `json:"side"`
+	Type     OrderType       `json:"type"`
 	Market   MarketDTO
 }
 
