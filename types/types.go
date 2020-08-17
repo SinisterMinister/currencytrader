@@ -120,7 +120,7 @@ type Order interface {
 	ToDTO() OrderDTO
 }
 
-type OrderDTO struct {	
+type OrderDTO struct {
 	Market       MarketDTO
 	CreationTime time.Time       `json:"creationTime"`
 	Fees         decimal.Decimal `json:"fees"`
@@ -129,7 +129,8 @@ type OrderDTO struct {
 	ID           string          `json:"id"`
 	Paid         decimal.Decimal `json:"paid"`
 	Request      OrderRequestDTO
-	Status       OrderStatus     `json:"status"`
+	Status       OrderStatus `json:"status"`
+}
 
 type OrderRequest interface {
 	Market() Market
