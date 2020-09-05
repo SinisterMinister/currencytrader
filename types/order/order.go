@@ -233,5 +233,7 @@ func (o *order) broadcastToStreams(status types.OrderStatus) {
 }
 
 func (o *order) ToDTO() types.OrderDTO {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
 	return o.dto
 }
