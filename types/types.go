@@ -128,8 +128,8 @@ type OrderDTO struct {
 	Filled       decimal.Decimal `json:"filled"`
 	ID           string          `json:"id"`
 	Paid         decimal.Decimal `json:"paid"`
-	Request      OrderRequestDTO
-	Status       OrderStatus `json:"status"`
+	Request      OrderRequestDTO `json:"request"`
+	Status       OrderStatus     `json:"status"`
 }
 
 type OrderRequest interface {
