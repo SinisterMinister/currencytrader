@@ -70,7 +70,7 @@ func (m *market) Candles(interval types.CandleInterval, start time.Time, end tim
 }
 
 func (m *market) AttemptOrder(req types.OrderRequest) (types.Order, error) {
-	return m.trader.OrderSvc().AttemptOrder(m, req.Type(), req.Side(), req.Price(), req.Quantity())
+	return m.trader.OrderSvc().AttemptOrder(m, req.Type(), req.Side(), req.Price(), req.Quantity(), req.ForceMaker())
 }
 
 func (m *market) AverageTradeVolume() (decimal.Decimal, error) {

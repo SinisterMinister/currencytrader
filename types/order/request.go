@@ -44,3 +44,5 @@ func (r *request) Price() decimal.Decimal { return r.dto.Price }
 func (r *request) Type() types.OrderType { return r.dto.Type }
 
 func (r *request) Market() types.Market { return r.market }
+
+func (r *request) ForceMaker() bool { return r.dto.ForceMaker }
