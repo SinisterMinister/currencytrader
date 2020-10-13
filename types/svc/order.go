@@ -39,13 +39,14 @@ func (svc *order) Order(mkt types.Market, id string) (order types.Order, err err
 	return
 }
 
-func (svc *order) AttemptOrder(m types.Market, t types.OrderType, s types.OrderSide, price decimal.Decimal, quantity decimal.Decimal) (order types.Order, err error) {
+func (svc *order) AttemptOrder(m types.Market, t types.OrderType, s types.OrderSide, price decimal.Decimal, quantity decimal.Decimal, forceMaker bool) (order types.Order, err error) {
 	dto, err := svc.trader.Provider().AttemptOrder(types.OrderRequestDTO{
-		Market:   m.ToDTO(),
-		Type:     t,
-		Side:     s,
-		Price:    price,
-		Quantity: quantity,
+		Market:     m.ToDTO(),
+		Type:       t,
+		Side:       s,
+		Price:      price,
+		Quantity:   quantity,
+		ForceMaker: forceMaker,
 	})
 	if err != nil {
 		return

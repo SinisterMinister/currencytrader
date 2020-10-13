@@ -133,6 +133,7 @@ type OrderDTO struct {
 }
 
 type OrderRequest interface {
+	ForceMaker() bool
 	Market() Market
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
@@ -142,11 +143,13 @@ type OrderRequest interface {
 }
 
 type OrderRequestDTO struct {
-	Price    decimal.Decimal `json:"price"`
-	Quantity decimal.Decimal `json:"quantity"`
-	Side     OrderSide       `json:"side"`
-	Type     OrderType       `json:"type"`
-	Market   MarketDTO
+	// ForceMaker forces the request to place the order as a maker order
+	ForceMaker bool `json:"forceMaker"`
+	Market     MarketDTO
+	Price      decimal.Decimal `json:"price"`
+	Quantity   decimal.Decimal `json:"quantity"`
+	Side       OrderSide       `json:"side"`
+	Type       OrderType       `json:"type"`
 }
 
 // Side represents which side the order will be placed
@@ -158,7 +161,7 @@ type OrderStatus string
 type OrderType string
 
 type OrderSvc interface {
-	AttemptOrder(m Market, t OrderType, s OrderSide, price decimal.Decimal, quantity decimal.Decimal) (order Order, err error)
+	AttemptOrder(m Market, t OrderType, s OrderSide, price decimal.Decimal, quantity decimal.Decimal, forceMaker bool) (order Order, err error)
 	CancelOrder(order Order) error
 	Order(m Market, id string) (Order, error)
 }

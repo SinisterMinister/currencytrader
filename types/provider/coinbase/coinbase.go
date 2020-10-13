@@ -51,6 +51,7 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		Size:      req.Quantity.String(),
 		Side:      strings.ToLower(string(req.Side)),
 		ProductID: req.Market.Name,
+		PostOnly:  req.ForceMarket,
 	}
 
 	placedOrder, err := p.client.CreateOrder(&orderRequest)
