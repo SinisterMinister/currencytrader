@@ -18,14 +18,15 @@ func NewRequestFromDTO(m types.Market, dto types.OrderRequestDTO) types.OrderReq
 	}
 }
 
-func NewRequest(m types.Market, t types.OrderType, s types.OrderSide, quantity decimal.Decimal, price decimal.Decimal) types.OrderRequest {
+func NewRequest(m types.Market, t types.OrderType, s types.OrderSide, quantity decimal.Decimal, price decimal.Decimal, forceMaker bool) types.OrderRequest {
 	return &request{
 		dto: types.OrderRequestDTO{
-			Type:     t,
-			Side:     s,
-			Price:    price,
-			Quantity: quantity,
-			Market:   m.ToDTO(),
+			Type:       t,
+			Side:       s,
+			Price:      price,
+			Quantity:   quantity,
+			Market:     m.ToDTO(),
+			ForceMaker: forceMaker,
 		},
 		market: m,
 	}
