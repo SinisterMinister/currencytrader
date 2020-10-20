@@ -14,13 +14,13 @@ func init() {
 	viper.SetDefault("coinbase.websocket.orderMatchHandlerInputBufferSize", 16)
 	viper.SetDefault("coinbase.websocket.orderChangeHandlerInputBufferSize", 16)
 
-	viper.SetDefault("coinbase.websocket.tickerHandlerOutputBufferSize", 4)
-	viper.SetDefault("coinbase.websocket.orderReceivedHandlerOutputBufferSize", 4)
-	viper.SetDefault("coinbase.websocket.orderOpenHandlerOutputBufferSize", 4)
-	viper.SetDefault("coinbase.websocket.orderDoneHandlerOutputBufferSize", 4)
-	viper.SetDefault("coinbase.websocket.orderMatchHandlerOutputBufferSize", 4)
-	viper.SetDefault("coinbase.websocket.orderChangeHandlerOutputBufferSize", 4)
+	viper.SetDefault("coinbase.websocket.tickerHandlerOutputBufferSize", 16)
+	viper.SetDefault("coinbase.websocket.orderReceivedHandlerOutputBufferSize", 16)
+	viper.SetDefault("coinbase.websocket.orderOpenHandlerOutputBufferSize", 16)
+	viper.SetDefault("coinbase.websocket.orderDoneHandlerOutputBufferSize", 16)
+	viper.SetDefault("coinbase.websocket.orderMatchHandlerOutputBufferSize", 16)
+	viper.SetDefault("coinbase.websocket.orderChangeHandlerOutputBufferSize", 16)
 
-	viper.SetDefault("coinbase.streams.tickerStreamBufferSize", 8)
+	viper.SetDefault("coinbase.streams.tickerStreamBufferSize", 16)
 	viper.SetDefault("coinbase.streams.orderStreamBufferSize", 8)
 }
