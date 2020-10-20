@@ -34,6 +34,10 @@ func (h *tickerHandler) Output() <-chan Ticker {
 	return h.output
 }
 
+func (h *tickerHandler) Name() string {
+	return "ticker"
+}
+
 func (h *tickerHandler) process(stop <-chan bool) {
 	h.log.Debug("starting ticker handler")
 	for {
@@ -85,6 +89,10 @@ func (h *orderReceivedHandler) Input() chan<- DataPackage {
 
 func (h *orderReceivedHandler) Output() <-chan Received {
 	return h.output
+}
+
+func (h *orderReceivedHandler) Name() string {
+	return "received"
 }
 
 func (h *orderReceivedHandler) process(stop <-chan bool) {
@@ -140,6 +148,10 @@ func (h *orderOpenHandler) Output() <-chan Open {
 	return h.output
 }
 
+func (h *orderOpenHandler) Name() string {
+	return "open"
+}
+
 func (h *orderOpenHandler) process(stop <-chan bool) {
 	h.log.Debug("starting order open handler")
 	for {
@@ -191,6 +203,10 @@ func (h *orderDoneHandler) Input() chan<- DataPackage {
 
 func (h *orderDoneHandler) Output() <-chan Done {
 	return h.output
+}
+
+func (h *orderDoneHandler) Name() string {
+	return "done"
 }
 
 func (h *orderDoneHandler) process(stop <-chan bool) {
@@ -246,6 +262,10 @@ func (h *orderMatchHandler) Output() <-chan Match {
 	return h.output
 }
 
+func (h *orderMatchHandler) Name() string {
+	return "match"
+}
+
 func (h *orderMatchHandler) process(stop <-chan bool) {
 	h.log.Debug("starting order match handler")
 	for {
@@ -297,6 +317,10 @@ func (h *orderChangeHandler) Input() chan<- DataPackage {
 
 func (h *orderChangeHandler) Output() <-chan Change {
 	return h.output
+}
+
+func (h *orderChangeHandler) Name() string {
+	return "change"
 }
 
 func (h *orderChangeHandler) process(stop <-chan bool) {

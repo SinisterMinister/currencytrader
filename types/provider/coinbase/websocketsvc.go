@@ -83,16 +83,16 @@ func (svc *websocketSvc) Input() chan<- DataPackage {
 	return svc.incomingSubscriptions
 }
 
-func (svc *websocketSvc) RegisterMessageHandler(mType string, obj MessageHandler) (err error) {
+func (svc *websocketSvc) RegisterMessageHandler(handler MessageHandler) (err error) {
 	svc.messageMtx.Lock()
 	defer svc.messageMtx.Unlock()
 
-	if _, ok := svc.messageHandlers[mType]; ok {
+	if _, ok := svc.messageHandlers[handler.Name()]; ok {
 		// Already registered
 		return errors.New("handler for type already registered")
 	}
-	svc.log.Debugf("registering message handler for type '%s'", mType)
-	svc.messageHandlers[mType] = obj
+	svc.log.Debugf("registering message handler for type '%s'", handler.Name())
+	svc.messageHandlers[handler.Name()] = handler
 	return
 }
 
@@ -220,7 +220,7 @@ func (svc *websocketSvc) processMessages() {
 			select {
 			case handler.Input() <- pkg:
 			default:
-				log.Warn("handler input channel blocked")
+				log.Warnf("%s handler input channel blocked", handler.Name())
 			}
 		}
 	}

@@ -62,27 +62,27 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 
 func (svc *streamSvc) registerTickerHandler() {
 	svc.tickerHandler = newTickerHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler("ticker", svc.tickerHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.tickerHandler)
 }
 
 func (svc *streamSvc) registerOrderReceivedHandler() {
 	svc.orderReceivedHandler = newOrderReceivedHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler("received", svc.orderReceivedHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.orderReceivedHandler)
 }
 
 func (svc *streamSvc) registerOrderOpenHandler() {
 	svc.orderOpenHandler = newOrderOpenHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler("open", svc.orderOpenHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.orderOpenHandler)
 }
 
 func (svc *streamSvc) registerOrderDoneHandler() {
 	svc.orderDoneHandler = newOrderDoneHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler("done", svc.orderDoneHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.orderDoneHandler)
 }
 
 func (svc *streamSvc) registerOrderMatchHandler() {
 	svc.orderMatchHandler = newOrderMatchHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler("match", svc.orderMatchHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.orderMatchHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {

@@ -8,7 +8,14 @@ import (
 	ord "github.com/sinisterminister/currencytrader/types/order"
 )
 
+type CallRequest struct {
+	Args         []interface{}
+	Method       string
+	ResponseChan chan []interface{}
+}
+
 type MessageHandler interface {
+	Name() string
 	Input() chan<- DataPackage
 }
 
