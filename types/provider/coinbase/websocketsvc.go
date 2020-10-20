@@ -45,7 +45,7 @@ func newWebsocketSvc(stop <-chan bool) (svc *websocketSvc, err error) {
 
 	// Register self as subscriptions handler
 	svc.log.Debug("registering subscriptions handler")
-	svc.RegisterMessageHandler("subscriptions", svc)
+	svc.RegisterMessageHandler(svc)
 
 	// Start subscriptions handler
 	go svc.handleSubscriptions()
@@ -81,6 +81,10 @@ func (svc *websocketSvc) Unsubscribe(req Subscribe) (err error) {
 
 func (svc *websocketSvc) Input() chan<- DataPackage {
 	return svc.incomingSubscriptions
+}
+
+func (svc *websocketSvc) Name() string {
+	return "subscriptions"
 }
 
 func (svc *websocketSvc) RegisterMessageHandler(handler MessageHandler) (err error) {
