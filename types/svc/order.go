@@ -88,7 +88,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	}
 
 	// Watch for updates
-	timer := time.NewTimer(1 * time.Second)
+	timer := time.NewTimer(15 * time.Second)
 	for {
 		select {
 		case <-timer.C:
