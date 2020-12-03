@@ -229,3 +229,68 @@ func (svc *websocketSvc) processMessages() {
 		}
 	}
 }
+
+func (svc *websocketSvc) processWebsocketStream(stop <-chan bool) (incoming chan<- DataPackage) {
+	// Setup the channels
+	incoming = make(chan DataPackage, viper.GetInt("coinbase.websocket.streamProcessorBufferSize"))
+
+	// Wrap everything in a single goroutine so we don't need mutexes
+	go func(stop <-chan bool, incoming <-chan DataPackage) {
+		var tickerChan, receivedChan, openChan, doneChan, matchChan chan<- DataPackage
+		for {
+			// Bail on stop first. We do it by itself in case incoming could be selected over stop because they're
+			// both ready to return and we don't want it to parse anymore.
+			select {
+			case <-stop:
+				return
+			default:
+			}
+
+			select {
+			// Bail on stop
+			case <-stop:
+				return
+
+			// Process the incoming data
+			case pkg := <-incoming:
+				svc.log.Debugf("sending message to '%s' handler", pkg.Type)
+				switch pkg.Type {
+				case Subscriptions:
+				case Ticker:
+				case Received:
+				case Open:
+				case Done:
+				case Match:
+				default:
+					svc.log.Warnf("unregistered message type %s receieved", pkg.Type)
+					continue
+				}
+
+				log.Debug("looking up handler to send data")
+				svc.messageMtx.RLock()
+				handler, ok := svc.messageHandlers[pkg.Type]
+				svc.messageMtx.RUnlock()
+
+				if !ok {
+					svc.log.Warnf("unregistered message type %s receieved", pkg.Type)
+					continue
+				}
+
+				select {
+				case handler.Input() <- pkg:
+				default:
+					log.Warnf("%s handler input channel blocked", handler.Name())
+				}
+			}
+		}
+
+	}(stop, incoming)
+}
+
+func (svc *websocketSvc) processSubscriptionsStream(stop <-chan bool) (incoming chan<- DataPackage) {
+	incoming = make(chan DataPackage, viper.GetInt("coinbase.websocket.subscriptionsStreamProcessorBufferSize"))
+
+	go func(stop <-chan bool, incoming chan DataPackage) {
+		handler := new
+	})(stop, incoming)
+}

@@ -19,8 +19,19 @@ type MessageHandler interface {
 	Input() chan<- DataPackage
 }
 
+type MessageType string
+
+var (
+	Ticker        MessageType = "ticker"
+	Received      MessageType = "received"
+	Open          MessageType = "open"
+	Done          MessageType = "done"
+	Match         MessageType = "match"
+	Subscriptions MessageType = "subscriptions"
+)
+
 type Message struct {
-	Type string `json:"type"`
+	Type MessageType `json:"type"`
 }
 
 type DataPackage struct {

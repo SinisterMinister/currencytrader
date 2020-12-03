@@ -166,6 +166,7 @@ func (h *orderOpenHandler) process(stop <-chan bool) {
 			h.log.Debug("parsing order open data")
 			if err := json.Unmarshal(pkg.Data, &order); err != nil {
 				h.log.WithError(err).Error("could not parse order open data")
+				continue
 			}
 
 			h.log.Debug("sending order open data")
