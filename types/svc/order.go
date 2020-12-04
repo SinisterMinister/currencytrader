@@ -65,6 +65,32 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 	return ord
 }
 
+// Refresh an order using exp backoff for retry handling
+func (svc *order) refreshOrder(o internal.Order) {
+	dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
+
+	// Retry errors
+	if err != nil {
+		i := 0
+		for i < 30 {
+			<-time.NewTimer(time.Duration(i * i)).C
+			dto, err = svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
+			if err != nil {
+				i++
+				continue
+			}
+			break
+		}
+		if err != nil {
+			log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
+			dto = o.ToDTO()
+			dto.Status = ord.Rejected
+		}
+	}
+
+	o.Update(dto)
+}
+
 func (svc *order) handleOrderStream(o internal.Order) {
 	// Bail if the order is already closed
 	switch o.Status() {
@@ -93,15 +119,10 @@ func (svc *order) handleOrderStream(o internal.Order) {
 		select {
 		case <-timer.C:
 			log.Debugf("fetching latest order status for order %s for stream backup", o.ID())
-			dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
-			if err != nil {
-				log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
-				dto = o.ToDTO()
-				dto.Status = ord.Rejected
-			}
+			svc.refreshOrder(o)
 
 			// No need to watch if it's already done
-			switch dto.Status {
+			switch o.Status() {
 			case ord.Unknown:
 				timer.Reset(1 * time.Second)
 			case ord.Filled:
@@ -109,13 +130,9 @@ func (svc *order) handleOrderStream(o internal.Order) {
 			case ord.Canceled:
 				fallthrough
 			case ord.Rejected:
-				go o.Update(dto)
 				close(stop)
 				return
 			}
-
-			// Update the order
-			go o.Update(dto)
 
 			// Reset the timer as a backup to the streams
 			timer.Reset(60 * time.Second)
