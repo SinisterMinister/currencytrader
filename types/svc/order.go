@@ -65,27 +65,14 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 	return ord
 }
 
-// Refresh an order using exp backoff for retry handling
+// Refresh an order
 func (svc *order) refreshOrder(o internal.Order) {
 	dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
 
-	// Retry errors
 	if err != nil {
-		i := 0
-		for i < 30 {
-			<-time.NewTimer(time.Duration(i * i)).C
-			dto, err = svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
-			if err != nil {
-				i++
-				continue
-			}
-			break
-		}
-		if err != nil {
-			log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
-			dto = o.ToDTO()
-			dto.Status = ord.Rejected
-		}
+		log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
+		dto = o.ToDTO()
+		dto.Status = ord.Unknown
 	}
 
 	o.Update(dto)
@@ -101,7 +88,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	case ord.Expired:
 		fallthrough
 	case ord.Rejected:
-		log.Info("bailing on order stream")
+		log.Debugf("status is %s: bailing on order stream", o.Status())
 		return
 	}
 
