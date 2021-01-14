@@ -144,7 +144,7 @@ func (r *Received) ToDTO(order types.OrderDTO) types.OrderDTO {
 		Market:       order.Market,
 		CreationTime: r.Time,
 		Filled:       decimal.Zero,
-		ID:           r.OrderID,
+		ID:           order.ID,
 		Request:      order.Request,
 		Status:       ord.Pending,
 		Fees:         order.Fees,

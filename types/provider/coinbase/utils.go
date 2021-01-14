@@ -1,10 +1,10 @@
 package coinbase
 
 import (
-	cbp "github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/shopspring/decimal"
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/order"
+	cbp "github.com/sinisterminister/go-coinbasepro/v2"
 )
 
 func getStatus(ord cbp.Order) types.OrderStatus {

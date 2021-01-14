@@ -24,6 +24,7 @@ type streamSvc struct {
 	orderMtx      sync.RWMutex
 	orderStreams  map[<-chan bool]*orderStreamWrapper
 	workingOrders map[string]workingOrder
+	idMapper      map[string]string
 
 	tickerMtx     sync.RWMutex
 	tickerStreams map[types.MarketDTO]chan types.TickerDTO
@@ -43,6 +44,7 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
 		workingOrders: make(map[string]workingOrder),
 		log:           log.WithField("source", "coinbase.streamSvc"),
+		idMapper:      map[string]string{},
 	}
 
 	svc.registerTickerHandler()
@@ -115,6 +117,13 @@ func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (st
 type orderStreamWrapper struct {
 	dto    types.OrderDTO
 	stream chan types.OrderDTO
+}
+
+func (svc *streamSvc) GetClientOrderIDFromOrderID(orderID string) string {
+	svc.orderMtx.RLock()
+	defer svc.orderMtx.RUnlock()
+
+	return svc.idMapper[orderID]
 }
 
 func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
@@ -347,10 +356,15 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderReceivedHandler.Output():
+			// Setting the id mapping
+			svc.orderMtx.Lock()
+			svc.idMapper[orderData.OrderID] = orderData.ClientOrderID
+			svc.orderMtx.Unlock()
+
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order received data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == orderData.OrderID {
+				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
 					default:
@@ -362,7 +376,7 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order received data to working orders")
-			svc.updateWorkingOrders(orderData.OrderID, orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
 		}
 	}
 }
@@ -376,7 +390,7 @@ func (svc *streamSvc) orderOpenStreamSink() {
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order open data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == orderData.OrderID {
+				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
 					default:
@@ -388,7 +402,7 @@ func (svc *streamSvc) orderOpenStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order open data to working orders")
-			svc.updateWorkingOrders(orderData.OrderID, orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
 		}
 	}
 }
@@ -402,7 +416,7 @@ func (svc *streamSvc) orderDoneStreamSink() {
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order done data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == orderData.OrderID {
+				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
 					default:
@@ -414,7 +428,7 @@ func (svc *streamSvc) orderDoneStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order done data to working orders")
-			svc.updateWorkingOrders(orderData.OrderID, orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
 		}
 	}
 }
@@ -428,7 +442,7 @@ func (svc *streamSvc) orderMatchStreamSink() {
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order match data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == orderData.MakerOrderID || wrapper.dto.ID == orderData.TakerOrderID {
+				if wrapper.dto.ID == svc.idMapper[orderData.MakerOrderID] || wrapper.dto.ID == svc.idMapper[orderData.TakerOrderID] {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
 					default:
@@ -440,8 +454,8 @@ func (svc *streamSvc) orderMatchStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order match data to working orders")
-			svc.updateWorkingOrders(orderData.MakerOrderID, orderData)
-			svc.updateWorkingOrders(orderData.TakerOrderID, orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.MakerOrderID), orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.TakerOrderID), orderData)
 		}
 	}
 }
@@ -455,7 +469,7 @@ func (svc *streamSvc) orderChangeStreamSink() {
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order change data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == orderData.OrderID {
+				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
 					default:
@@ -467,7 +481,7 @@ func (svc *streamSvc) orderChangeStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order change data to working orders")
-			svc.updateWorkingOrders(orderData.OrderID, orderData)
+			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
 		}
 	}
 }

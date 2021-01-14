@@ -1,17 +1,19 @@
 package coinbase
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/go-playground/log/v7"
+	"github.com/google/uuid"
 
 	"github.com/shopspring/decimal"
 
-	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/sinisterminister/currencytrader/types"
 	providerclient "github.com/sinisterminister/currencytrader/types/provider/coinbase/client"
+	"github.com/sinisterminister/go-coinbasepro/v2"
 )
 
 type provider struct {
@@ -22,9 +24,11 @@ type provider struct {
 	currencies    map[string]types.CurrencyDTO
 	socketStreams map[string]chan interface{}
 	accounts      map[string]string
+	rateLimiter   chan interface{}
+	throttleOnce  sync.Once
 }
 
-func New(stop <-chan bool, client *providerclient.Client) types.Provider {
+func New(stop <-chan bool, client *providerclient.Client, rateLimit int, burstLimit int) types.Provider {
 	// Instantiate websocket handler
 	wssvc, err := newWebsocketSvc(stop)
 	if err != nil {
@@ -34,29 +38,61 @@ func New(stop <-chan bool, client *providerclient.Client) types.Provider {
 	// Instantiate stream service
 	svc := newStreamService(stop, wssvc)
 	provider := &provider{
-		client:     client,
-		currencies: make(map[string]types.CurrencyDTO),
-		streamSvc:  svc,
-		accounts:   make(map[string]string),
+		client:      client,
+		currencies:  make(map[string]types.CurrencyDTO),
+		streamSvc:   svc,
+		accounts:    make(map[string]string),
+		rateLimiter: make(chan interface{}, burstLimit-rateLimit),
 	}
-
+	provider.startThrottler(rateLimit, burstLimit)
 	provider.refreshCaches()
 
 	return provider
 }
 
+func (p *provider) startThrottler(rateLimit int, burstLimit int) {
+	p.mutex.Lock()
+	limiter := p.rateLimiter
+	p.mutex.Unlock()
+	go func(limiter chan interface{}) {
+		ticker := time.Tick(time.Second / time.Duration(rateLimit))
+		for {
+			<-ticker
+			limiter <- struct{}{}
+		}
+	}(limiter)
+}
+
 func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, err error) {
+	// Create a client order id
+	cid, err := uuid.NewRandom()
+	if err != nil {
+		return
+	}
+
+	// Create the order from the request
 	orderRequest := coinbasepro.Order{
 		Price:     req.Price.String(),
 		Size:      req.Quantity.String(),
 		Side:      strings.ToLower(string(req.Side)),
 		ProductID: req.Market.Name,
 		PostOnly:  req.ForceMaker,
+		ClientOID: cid.String(),
 	}
 
+	// Mind the rate limit
+	<-p.rateLimiter
+
+	// Place the order
 	placedOrder, err := p.client.CreateOrder(&orderRequest)
 	if err != nil {
-		return
+		// Make sure the order didn't manage to make it there somehow
+		log.WithError(err).Errorf("error creating order %s checking if it posted", cid.String())
+		var err2 error
+		placedOrder, err2 = p.client.GetOrder("client:" + cid.String())
+		if err2 != nil {
+			return
+		}
 	}
 
 	// Convert the order to a DTO
@@ -65,7 +101,7 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		Market:       req.Market,
 		CreationTime: time.Time(placedOrder.CreatedAt),
 		Filled:       decimal.RequireFromString(placedOrder.FilledSize),
-		ID:           placedOrder.ID,
+		ID:           cid.String(),
 		Status:       getStatus(placedOrder),
 	}
 	return
@@ -74,6 +110,9 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 func (p *provider) AverageTradeVolume(mkt types.MarketDTO) (decimal.Decimal, error) {
 	var trades, buffer []coinbasepro.Trade
 	trades = []coinbasepro.Trade{}
+
+	// Mind the rate limit
+	<-p.rateLimiter
 
 	// Get the trades
 	cursor := p.client.ListTrades(mkt.Name)
@@ -95,7 +134,9 @@ func (p *provider) AverageTradeVolume(mkt types.MarketDTO) (decimal.Decimal, err
 }
 
 func (p *provider) CancelOrder(ord types.OrderDTO) (err error) {
-	err = p.client.CancelOrder(ord.ID)
+	// Mind the rate limit
+	<-p.rateLimiter
+	err = p.client.CancelOrder(fmt.Sprintf("client:%s", ord.ID))
 	return
 }
 
@@ -108,6 +149,9 @@ func (p *provider) Candles(mkt types.MarketDTO, interval types.CandleInterval, s
 
 	// Create a slice for candles
 	candles = []types.CandleDTO{}
+
+	// Mind the rate limit
+	<-p.rateLimiter
 
 	// Get the rates from the server
 	rates, err := p.client.GetHistoricRates(mkt.Name, coinbasepro.GetHistoricRatesParams{
@@ -132,6 +176,9 @@ func (p *provider) Candles(mkt types.MarketDTO, interval types.CandleInterval, s
 }
 
 func (p *provider) Currencies() (curs []types.CurrencyDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	rawCurs, err := p.client.GetCurrencies()
 	if err != nil {
 		return
@@ -151,6 +198,9 @@ func (p *provider) Currencies() (curs []types.CurrencyDTO, err error) {
 }
 
 func (p *provider) Fees() (fees types.FeesDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	rawFees, err := p.client.GetFees()
 	if err != nil {
 		return
@@ -165,6 +215,9 @@ func (p *provider) Fees() (fees types.FeesDTO, err error) {
 }
 
 func (p *provider) Markets() (mkts []types.MarketDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	products, err := p.client.GetProducts()
 
 	mkts = []types.MarketDTO{}
@@ -188,14 +241,18 @@ func (p *provider) Markets() (mkts []types.MarketDTO, err error) {
 }
 
 func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO, err error) {
-	raw, err := p.client.GetOrder(id)
+	// Mind the rate limit
+	<-p.rateLimiter
+	log.Debugf("getting order %s", fmt.Sprintf("client:%s", id))
+
+	raw, err := p.client.GetOrder(fmt.Sprintf("client:%s", id))
 	if err != nil {
 		return
 	}
 
 	ord.CreationTime = time.Time(raw.CreatedAt)
 	ord.Filled = decimal.RequireFromString(raw.FilledSize)
-	ord.ID = raw.ID
+	ord.ID = id
 	ord.Status = getStatus(raw)
 	ord.Request = types.OrderRequestDTO{
 		Market:   market,
@@ -219,6 +276,9 @@ func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <
 }
 
 func (p *provider) Ticker(market types.MarketDTO) (tkr types.TickerDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	raw, err := p.client.GetTicker(market.Name)
 	if err != nil {
 		return
@@ -238,6 +298,9 @@ func (p *provider) TickerStream(stop <-chan bool, market types.MarketDTO) (strea
 }
 
 func (p *provider) Wallet(currency types.CurrencyDTO) (wal types.WalletDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	acct, err := p.client.GetAccount(p.accounts[currency.Symbol])
 	if err != nil {
 		return
@@ -252,6 +315,9 @@ func (p *provider) Wallet(currency types.CurrencyDTO) (wal types.WalletDTO, err 
 }
 
 func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
+	// Mind the rate limit
+	<-p.rateLimiter
+
 	accts, err := p.client.GetAccounts()
 	if err != nil {
 		return
@@ -282,6 +348,8 @@ func (p *provider) refreshCaches() {
 		p.currencies[cur.Symbol] = cur
 	}
 
+	// Mind the rate limit
+	<-p.rateLimiter
 	accts, err := p.client.GetAccounts()
 	if err != nil {
 		log.WithError(err).Error("Failed fetching accounts")

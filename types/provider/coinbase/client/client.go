@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/preichenberger/go-coinbasepro/v2"
 	"github.com/shopspring/decimal"
+	"github.com/sinisterminister/go-coinbasepro/v2"
 )
 
 type Fees struct {
