@@ -67,7 +67,7 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 
 // Refresh an order
 func (svc *order) refreshOrder(o internal.Order) {
-	dto, err := svc.trader.Provider().Order(o.Market().ToDTO(), o.ID())
+	dto, err := svc.trader.Provider().RefreshOrder(o.ToDTO())
 
 	if err != nil {
 		log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
@@ -101,7 +101,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	}
 
 	// Watch for updates
-	timer := time.NewTimer(15 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
 	for {
 		select {
 		case <-timer.C:
@@ -122,7 +122,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 			}
 
 			// Reset the timer as a backup to the streams
-			timer.Reset(60 * time.Second)
+			timer.Reset(5 * time.Second)
 		case <-svc.stop:
 			close(stop)
 			return
@@ -138,7 +138,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 					return
 				}
 				// Reset the timer as a backup to the streams
-				timer.Reset(60 * time.Second)
+				timer.Reset(5 * time.Second)
 			}
 		}
 	}

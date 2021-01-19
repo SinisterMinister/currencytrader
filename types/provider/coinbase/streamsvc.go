@@ -199,19 +199,6 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 	return
 }
 
-func (svc *streamSvc) updateStreamWithWorkingData(id string, wrapper *orderStreamWrapper) {
-	svc.orderMtx.RLock()
-	if data, ok := svc.workingOrders[id]; ok {
-		for _, d := range data.updates {
-			switch v := d.(type) {
-			case Received:
-				wrapper.stream <- v.ToDTO(wrapper.dto)
-			}
-		}
-	}
-	svc.orderMtx.RUnlock()
-}
-
 func (svc *streamSvc) updateWebsocketSubscriptions() {
 	var tickerSubs, fullSubs []string
 	subs := svc.wsSvc.Subscriptions()
