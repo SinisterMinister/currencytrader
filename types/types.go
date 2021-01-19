@@ -114,6 +114,7 @@ type Order interface {
 	IsDone() bool
 	Market() Market
 	Paid() decimal.Decimal
+	Refresh() error
 	Request() OrderRequest
 	Status() OrderStatus
 	StatusStream(stop <-chan bool) <-chan OrderStatus
@@ -176,6 +177,7 @@ type Provider interface {
 	Markets() ([]MarketDTO, error)
 	Order(markest MarketDTO, id string) (OrderDTO, error)
 	OrderStream(stop <-chan bool, order OrderDTO) (<-chan OrderDTO, error)
+	RefreshOrder(in OrderDTO) (OrderDTO, error)
 	Ticker(market MarketDTO) (TickerDTO, error)
 	TickerStream(stop <-chan bool, market MarketDTO) (<-chan TickerDTO, error)
 	Wallet(currency CurrencyDTO) (WalletDTO, error)

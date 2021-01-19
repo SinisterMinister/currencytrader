@@ -57,6 +57,17 @@ func (o *order) ID() string {
 	return o.dto.ID
 }
 
+func (o *order) Refresh() (err error) {
+	dto, err := o.trader.Provider().RefreshOrder(o.ToDTO())
+	if err != nil {
+		return
+	}
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.dto = dto
+	return
+}
+
 func (o *order) Request() types.OrderRequest {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()

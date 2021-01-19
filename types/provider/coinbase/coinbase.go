@@ -12,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/sinisterminister/currencytrader/types"
+	"github.com/sinisterminister/currencytrader/types/order"
 	providerclient "github.com/sinisterminister/currencytrader/types/provider/coinbase/client"
 	"github.com/sinisterminister/go-coinbasepro/v2"
 )
@@ -48,19 +49,6 @@ func New(stop <-chan bool, client *providerclient.Client, rateLimit int, burstLi
 	provider.refreshCaches()
 
 	return provider
-}
-
-func (p *provider) startThrottler(rateLimit int, burstLimit int) {
-	p.mutex.Lock()
-	limiter := p.rateLimiter
-	p.mutex.Unlock()
-	go func(limiter chan interface{}) {
-		ticker := time.Tick(time.Second / time.Duration(rateLimit))
-		for {
-			<-ticker
-			limiter <- struct{}{}
-		}
-	}(limiter)
 }
 
 func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, err error) {
@@ -252,7 +240,7 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 
 	ord.CreationTime = time.Time(raw.CreatedAt)
 	ord.Filled = decimal.RequireFromString(raw.FilledSize)
-	ord.ID = id
+	ord.ID = raw.ClientOID
 	ord.Status = getStatus(raw)
 	ord.Request = types.OrderRequestDTO{
 		Market:   market,
@@ -273,6 +261,19 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 
 func (p *provider) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
 	return p.streamSvc.OrderStream(stop, order)
+}
+
+func (p *provider) RefreshOrder(in types.OrderDTO) (out types.OrderDTO, err error) {
+	out, err = p.Order(in.Market, in.ID)
+	if err != nil {
+		if strings.Contains(err.Error(), "NotFound") {
+			log.Debugf("could not find order %s in API; assuming it was cancelled", in.ID)
+			out = in
+			out.Status = order.Canceled
+			err = nil
+		}
+	}
+	return
 }
 
 func (p *provider) Ticker(market types.MarketDTO) (tkr types.TickerDTO, err error) {
@@ -333,6 +334,19 @@ func (p *provider) Wallets() (wals []types.WalletDTO, err error) {
 		})
 	}
 	return
+}
+
+func (p *provider) startThrottler(rateLimit int, burstLimit int) {
+	p.mutex.Lock()
+	limiter := p.rateLimiter
+	p.mutex.Unlock()
+	go func(limiter chan interface{}) {
+		ticker := time.Tick(time.Second / time.Duration(rateLimit))
+		for {
+			<-ticker
+			limiter <- struct{}{}
+		}
+	}(limiter)
 }
 
 func (p *provider) refreshCaches() {
