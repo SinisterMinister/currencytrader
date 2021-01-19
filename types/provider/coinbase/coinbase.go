@@ -240,7 +240,7 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 
 	ord.CreationTime = time.Time(raw.CreatedAt)
 	ord.Filled = decimal.RequireFromString(raw.FilledSize)
-	ord.ID = raw.ClientOID
+	ord.ID = id
 	ord.Status = getStatus(raw)
 	ord.Request = types.OrderRequestDTO{
 		Market:   market,
