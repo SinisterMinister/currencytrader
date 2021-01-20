@@ -75,7 +75,7 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 	placedOrder, err := p.client.CreateOrder(&orderRequest)
 	if err != nil {
 		// Make sure the order didn't manage to make it there somehow
-		log.WithError(err).Errorf("error creating order %s checking if it posted", cid.String())
+		log.WithError(err).Debugf("error creating order %s checking if it posted", cid.String())
 		var err2 error
 		placedOrder, err2 = p.client.GetOrder("client:" + cid.String())
 		if err2 != nil {
