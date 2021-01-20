@@ -52,12 +52,14 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 	svc.registerOrderOpenHandler()
 	svc.registerOrderDoneHandler()
 	svc.registerOrderMatchHandler()
+	svc.registerOrderChangeHandler()
 
 	go svc.tickerStreamSink()
 	go svc.orderReceivedStreamSink()
 	go svc.orderOpenStreamSink()
 	go svc.orderDoneStreamSink()
 	go svc.orderMatchStreamSink()
+	go svc.orderChangeStreamSink()
 
 	return
 }
@@ -84,6 +86,11 @@ func (svc *streamSvc) registerOrderDoneHandler() {
 
 func (svc *streamSvc) registerOrderMatchHandler() {
 	svc.orderMatchHandler = newOrderMatchHandler(svc.stop)
+	svc.wsSvc.RegisterMessageHandler(svc.orderMatchHandler)
+}
+
+func (svc *streamSvc) registerOrderChangeHandler() {
+	svc.orderChangeHandler = newOrderChangeHandler(svc.stop)
 	svc.wsSvc.RegisterMessageHandler(svc.orderMatchHandler)
 }
 
