@@ -65,6 +65,7 @@ func (o *order) Refresh() (err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	o.dto = dto
+	o.refreshDone()
 	return
 }
 
@@ -193,27 +194,8 @@ func (o *order) deregisterStream(stream chan types.OrderStatus) {
 func (o *order) Update(dto types.OrderDTO) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	switch dto.Status {
-	case Filled:
-		fallthrough
-	case Canceled:
-		fallthrough
-	case Expired:
-		fallthrough
-	case Rejected:
-		// Close the done channel as the
-		select {
-		case <-o.done:
-		default:
-			close(o.done)
-		}
-		fallthrough
-	case Partial:
-		o.dto.Filled = o.dto.Filled.Add(dto.Filled)
-		fallthrough
-	default:
-		o.dto = dto
-	}
+	o.dto = dto
+	o.refreshDone()
 	go o.broadcastToStreams(dto.Status)
 
 	// TODO: close streams

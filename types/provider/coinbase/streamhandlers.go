@@ -96,22 +96,22 @@ func (h *orderReceivedHandler) Name() string {
 }
 
 func (h *orderReceivedHandler) process(stop <-chan bool) {
-	h.log.Debug("starting order receieved handler")
+	h.log.Debug("starting order received handler")
 	for {
 		select {
 		case <-stop:
 			// Time to stop
-			h.log.Debug("stopping order receieved handler")
+			h.log.Debug("stopping order received handler")
 			return
 		case pkg := <-h.input:
 			// Process data
 			var order Received
-			h.log.Debug("parsing order receieved data")
+			h.log.Debug("parsing order received data")
 			if err := json.Unmarshal(pkg.Data, &order); err != nil {
-				h.log.WithError(err).Error("could not parse order receieved data")
+				h.log.WithError(err).Error("could not parse order received data")
 			}
 
-			h.log.Debug("sending order receieved data")
+			h.log.Debug("sending order received data")
 			select {
 			case h.output <- order:
 			default:

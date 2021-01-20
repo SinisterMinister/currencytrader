@@ -65,19 +65,6 @@ func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 	return ord
 }
 
-// Refresh an order
-func (svc *order) refreshOrder(o internal.Order) {
-	dto, err := svc.trader.Provider().RefreshOrder(o.ToDTO())
-
-	if err != nil {
-		log.WithError(err).Errorf("could not fetch order status for order %s", o.ID())
-		dto = o.ToDTO()
-		dto.Status = ord.Unknown
-	}
-
-	o.Update(dto)
-}
-
 func (svc *order) handleOrderStream(o internal.Order) {
 	// Bail if the order is already closed
 	switch o.Status() {
@@ -105,8 +92,8 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	for {
 		select {
 		case <-timer.C:
-			log.Debugf("fetching latest order status for order %s for stream backup", o.ID())
-			svc.refreshOrder(o)
+			// Refresh the order
+			o.Refresh()
 
 			// No need to watch if it's already done
 			switch o.Status() {

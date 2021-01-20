@@ -240,7 +240,7 @@ func (m *Match) ToDTO(order types.OrderDTO) types.OrderDTO {
 	return types.OrderDTO{
 		Market:       order.Market,
 		CreationTime: order.CreationTime,
-		Filled:       m.Size,
+		Filled:       m.Size.Add(order.Filled),
 		ID:           order.ID,
 		Request:      order.Request,
 		Status:       status,
