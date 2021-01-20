@@ -91,7 +91,7 @@ func (svc *streamSvc) registerOrderMatchHandler() {
 
 func (svc *streamSvc) registerOrderChangeHandler() {
 	svc.orderChangeHandler = newOrderChangeHandler(svc.stop)
-	svc.wsSvc.RegisterMessageHandler(svc.orderMatchHandler)
+	svc.wsSvc.RegisterMessageHandler(svc.orderChangeHandler)
 }
 
 func (svc *streamSvc) TickerStream(stop <-chan bool, market types.MarketDTO) (stream <-chan types.TickerDTO, err error) {
