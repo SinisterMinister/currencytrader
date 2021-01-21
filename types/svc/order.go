@@ -91,6 +91,10 @@ func (svc *order) handleOrderStream(o internal.Order) {
 	timer := time.NewTimer(5 * time.Second)
 	for {
 		select {
+		case <-o.Done():
+			close(stop)
+			return
+
 		case <-timer.C:
 			// Refresh the order
 			o.Refresh()

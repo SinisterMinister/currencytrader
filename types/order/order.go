@@ -66,6 +66,7 @@ func (o *order) Refresh() (err error) {
 	defer o.mutex.Unlock()
 	o.dto = dto
 	o.refreshDone()
+	go o.broadcastToStreams(dto.Status)
 	return
 }
 
@@ -193,9 +194,10 @@ func (o *order) deregisterStream(stream chan types.OrderStatus) {
 
 func (o *order) Update(dto types.OrderDTO) {
 	o.mutex.Lock()
-	defer o.mutex.Unlock()
 	o.dto = dto
 	o.refreshDone()
+	o.mutex.Unlock()
+
 	go o.broadcastToStreams(dto.Status)
 
 	// TODO: close streams
