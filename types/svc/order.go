@@ -59,6 +59,10 @@ func (svc *order) CancelOrder(order types.Order) error {
 	return svc.trader.Provider().CancelOrder(order.ToDTO())
 }
 
+func (svc *order) OrderFromDTO(dto types.OrderDTO) types.Order {
+	return svc.buildOrder(dto)
+}
+
 func (svc *order) buildOrder(dto types.OrderDTO) types.Order {
 	ord := ord.NewOrder(svc.trader, dto)
 	go svc.handleOrderStream(ord)

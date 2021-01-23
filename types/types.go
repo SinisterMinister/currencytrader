@@ -165,6 +165,7 @@ type OrderSvc interface {
 	AttemptOrder(m Market, t OrderType, s OrderSide, price decimal.Decimal, quantity decimal.Decimal, forceMaker bool) (order Order, err error)
 	CancelOrder(order Order) error
 	Order(m Market, id string) (Order, error)
+	OrderFromDTO(dto OrderDTO) Order
 }
 
 type Provider interface {
