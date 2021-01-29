@@ -72,10 +72,22 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		}
 	case order.Market:
 		// Create the market order from the request
+		var funds, size string
+		if req.Funds.Equal(decimal.Zero) {
+			funds = ""
+		} else {
+			funds = req.Funds.String()
+		}
+
+		if req.Quantity.Equal(decimal.Zero) {
+			size = ""
+		} else {
+			size = req.Quantity.String()
+		}
 		orderRequest = coinbasepro.Order{
 			Type:      "market",
-			Funds:     req.Funds.String(),
-			Size:      req.Quantity.String(),
+			Funds:     funds,
+			Size:      size,
 			Side:      strings.ToLower(string(req.Side)),
 			ProductID: req.Market.Name,
 			ClientOID: cid.String(),
