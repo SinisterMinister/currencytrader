@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/go-playground/log/v7"
-	"github.com/sinisterminister/currencytrader/types/market"
 
 	"github.com/shopspring/decimal"
 
@@ -153,38 +152,3 @@ func (svc *order) Stop() {
 	close(svc.stop)
 	svc.running = sync.Once{}
 }
-
-// Request represents an order to be placed by the provider
-type request struct {
-	trader internal.Trader
-	dto    types.OrderRequestDTO
-}
-
-func NewRequestFromDTO(trader internal.Trader, dto types.OrderRequestDTO) types.OrderRequest {
-	return &request{trader, dto}
-}
-
-func NewRequest(trader internal.Trader, oType types.OrderType, side types.OrderSide, quantity decimal.Decimal, price decimal.Decimal) types.OrderRequest {
-	return &request{trader, types.OrderRequestDTO{
-		Type:     oType,
-		Side:     side,
-		Price:    price,
-		Quantity: quantity,
-	}}
-}
-
-func (r *request) ToDTO() types.OrderRequestDTO {
-	return r.dto
-}
-
-func (r *request) Side() types.OrderSide { return r.dto.Side }
-
-func (r *request) Quantity() decimal.Decimal { return r.dto.Quantity }
-
-func (r *request) Price() decimal.Decimal { return r.dto.Price }
-
-func (r *request) Type() types.OrderType { return r.dto.Type }
-
-func (r *request) Market() types.Market { return market.New(r.trader, r.dto.Market) }
-
-func (r *request) ForceMaker() bool { return r.dto.ForceMaker }

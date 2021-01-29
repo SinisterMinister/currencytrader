@@ -58,14 +58,30 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		return
 	}
 
-	// Create the order from the request
-	orderRequest := coinbasepro.Order{
-		Price:     req.Price.String(),
-		Size:      req.Quantity.String(),
-		Side:      strings.ToLower(string(req.Side)),
-		ProductID: req.Market.Name,
-		PostOnly:  req.ForceMaker,
-		ClientOID: cid.String(),
+	var orderRequest coinbasepro.Order
+	switch req.Type {
+	case order.Limit:
+		// Create the limit order from the request
+		orderRequest = coinbasepro.Order{
+			Price:     req.Price.String(),
+			Size:      req.Quantity.String(),
+			Side:      strings.ToLower(string(req.Side)),
+			ProductID: req.Market.Name,
+			PostOnly:  req.ForceMaker,
+			ClientOID: cid.String(),
+		}
+	case order.Market:
+		// Create the market order from the request
+		orderRequest = coinbasepro.Order{
+			Type:      "market",
+			Funds:     req.Funds.String(),
+			Size:      req.Quantity.String(),
+			Side:      strings.ToLower(string(req.Side)),
+			ProductID: req.Market.Name,
+			ClientOID: cid.String(),
+		}
+	default:
+		return types.OrderDTO{}, fmt.Errorf("order type %s not implemented", req.Type)
 	}
 
 	// Mind the rate limit
@@ -80,6 +96,15 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		placedOrder, err2 = p.client.GetOrder("client:" + cid.String())
 		if err2 != nil {
 			return
+		}
+	}
+
+	if req.Type == order.Market {
+		price, err := decimal.NewFromString(placedOrder.Price)
+		if err != nil {
+			log.WithError(err).Error("could not convert price to decimal")
+		} else {
+			req.Price = price
 		}
 	}
 

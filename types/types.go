@@ -135,6 +135,7 @@ type OrderDTO struct {
 
 type OrderRequest interface {
 	ForceMaker() bool
+	Funds() decimal.Decimal
 	Market() Market
 	Price() decimal.Decimal
 	Quantity() decimal.Decimal
@@ -146,11 +147,19 @@ type OrderRequest interface {
 type OrderRequestDTO struct {
 	// ForceMaker forces the request to place the order as a maker order
 	ForceMaker bool `json:"forceMaker"`
-	Market     MarketDTO
-	Price      decimal.Decimal `json:"price"`
-	Quantity   decimal.Decimal `json:"quantity"`
-	Side       OrderSide       `json:"side"`
-	Type       OrderType       `json:"type"`
+
+	// MARKET ORDER ONLY - Sets the amount of quote currency to use for the trade
+	Funds  decimal.Decimal `json:"funds"`
+	Market MarketDTO
+
+	// LIMIT ORDER ONLY - Sets the price of the order in the quote currency
+	Price decimal.Decimal `json:"price"`
+
+	// How much of the base currency to trade
+	Quantity decimal.Decimal `json:"quantity"`
+
+	Side OrderSide `json:"side"`
+	Type OrderType `json:"type"`
 }
 
 // Side represents which side the order will be placed
