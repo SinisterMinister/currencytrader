@@ -275,6 +275,17 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 		return
 	}
 
+	// Normalize the price, size, and funds
+	price, _ := decimal.NewFromString(raw.Price)
+	size, _ := decimal.NewFromString(raw.Size)
+	funds, _ := decimal.NewFromString(raw.Funds)
+	if raw.Price == "" {
+		raw.Price = "0"
+	}
+	if raw.Size == "" {
+		raw.Size = "0"
+	}
+
 	ord.CreationTime = time.Time(raw.CreatedAt)
 	ord.Filled = decimal.RequireFromString(raw.FilledSize)
 	ord.ID = id
@@ -283,8 +294,9 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 		Market:   market,
 		Type:     getType(raw),
 		Side:     getSide(raw),
-		Price:    decimal.RequireFromString(raw.Price),
-		Quantity: decimal.RequireFromString(raw.Size),
+		Price:    price,
+		Quantity: size,
+		Funds:    funds,
 	}
 	ord.Market = market
 	ord.Fees = decimal.RequireFromString(raw.FillFees)
