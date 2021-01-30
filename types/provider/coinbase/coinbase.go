@@ -277,17 +277,18 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 
 	// Normalize the price, size, and funds
 	price, _ := decimal.NewFromString(raw.Price)
+	execVal, _ := decimal.NewFromString(raw.ExecutedValue)
 	size, _ := decimal.NewFromString(raw.Size)
 	funds, _ := decimal.NewFromString(raw.Funds)
-	if raw.Price == "" {
-		raw.Price = "0"
-	}
-	if raw.Size == "" {
-		raw.Size = "0"
+	filled, _ := decimal.NewFromString(raw.FilledSize)
+
+	// Set the price for market orders
+	if price.Equal(decimal.Zero) && !execVal.Equal(decimal.Zero) && !filled.Equal(decimal.Zero) {
+		price = execVal.Div(filled)
 	}
 
 	ord.CreationTime = time.Time(raw.CreatedAt)
-	ord.Filled = decimal.RequireFromString(raw.FilledSize)
+	ord.Filled = filled
 	ord.ID = id
 	ord.Status = getStatus(raw)
 	ord.Request = types.OrderRequestDTO{
