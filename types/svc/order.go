@@ -6,8 +6,6 @@ import (
 
 	"github.com/go-playground/log/v7"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/sinisterminister/currencytrader/types"
 	"github.com/sinisterminister/currencytrader/types/internal"
 	ord "github.com/sinisterminister/currencytrader/types/order"
@@ -38,15 +36,8 @@ func (svc *order) Order(mkt types.Market, id string) (order types.Order, err err
 	return
 }
 
-func (svc *order) AttemptOrder(m types.Market, t types.OrderType, s types.OrderSide, price decimal.Decimal, quantity decimal.Decimal, forceMaker bool) (order types.Order, err error) {
-	dto, err := svc.trader.Provider().AttemptOrder(types.OrderRequestDTO{
-		Market:     m.ToDTO(),
-		Type:       t,
-		Side:       s,
-		Price:      price,
-		Quantity:   quantity,
-		ForceMaker: forceMaker,
-	})
+func (svc *order) AttemptOrder(m types.Market, req types.OrderRequest) (order types.Order, err error) {
+	dto, err := svc.trader.Provider().AttemptOrder(req.ToDTO())
 	if err != nil {
 		return
 	}

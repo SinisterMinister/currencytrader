@@ -78,12 +78,12 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		} else {
 			funds = req.Funds.String()
 		}
-
 		if req.Quantity.Equal(decimal.Zero) {
 			size = ""
 		} else {
 			size = req.Quantity.String()
 		}
+
 		orderRequest = coinbasepro.Order{
 			Type:      "market",
 			Funds:     funds,
@@ -112,12 +112,7 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 	}
 
 	if req.Type == order.Market {
-		price, err := decimal.NewFromString(placedOrder.Price)
-		if err != nil {
-			log.WithError(err).Error("could not convert price to decimal")
-		} else {
-			req.Price = price
-		}
+		req.Price, _ = decimal.NewFromString(placedOrder.Price)
 	}
 
 	// Convert the order to a DTO
