@@ -91,6 +91,7 @@ func (svc *order) handleOrderStream(o internal.Order) {
 
 		case <-timer.C:
 			// Refresh the order
+			log.Debugf("refreshing order %s - no stream data received", o.ID())
 			o.Refresh()
 
 			// No need to watch if it's already done

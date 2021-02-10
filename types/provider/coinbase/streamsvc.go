@@ -126,13 +126,6 @@ type orderStreamWrapper struct {
 	stream chan types.OrderDTO
 }
 
-func (svc *streamSvc) GetClientOrderIDFromOrderID(orderID string) string {
-	svc.orderMtx.RLock()
-	defer svc.orderMtx.RUnlock()
-
-	return svc.idMapper[orderID]
-}
-
 func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (stream <-chan types.OrderDTO, err error) {
 	// Create the stream
 	wrapper := &orderStreamWrapper{
@@ -158,31 +151,31 @@ func (svc *streamSvc) OrderStream(stop <-chan bool, order types.OrderDTO) (strea
 					select {
 					case wrapper.stream <- v.ToDTO(wrapper.dto):
 					default:
-						log.Warn("wrapper stream is blocked")
+						log.Warn("received wrapper stream is blocked")
 					}
 				case Open:
 					select {
 					case wrapper.stream <- v.ToDTO(wrapper.dto):
 					default:
-						log.Warn("wrapper stream is blocked")
+						log.Warn("open wrapper stream is blocked")
 					}
 				case Done:
 					select {
 					case wrapper.stream <- v.ToDTO(wrapper.dto):
 					default:
-						log.Warn("wrapper stream is blocked")
+						log.Warn("done wrapper stream is blocked")
 					}
 				case Match:
 					select {
 					case wrapper.stream <- v.ToDTO(wrapper.dto):
 					default:
-						log.Warn("wrapper stream is blocked")
+						log.Warn("match wrapper stream is blocked")
 					}
 				case Change:
 					select {
 					case wrapper.stream <- v.ToDTO(wrapper.dto):
 					default:
-						log.Warn("wrapper stream is blocked")
+						log.Warn("change wrapper stream is blocked")
 					}
 				}
 			}
@@ -344,23 +337,40 @@ func (svc *streamSvc) updateWorkingOrders(id string, data interface{}) {
 	svc.workingOrders[id] = order
 }
 
+func (svc *streamSvc) registerClientId(orderId string, clientId string) {
+	// Setting the id mapping
+	svc.orderMtx.Lock()
+	svc.idMapper[orderId] = clientId
+	svc.orderMtx.Unlock()
+}
+
+func (svc *streamSvc) GetClientOrderIDFromOrderID(orderID string) string {
+	svc.orderMtx.RLock()
+	defer svc.orderMtx.RUnlock()
+
+	return svc.idMapper[orderID]
+}
+
 func (svc *streamSvc) orderReceivedStreamSink() {
 	for {
 		select {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderReceivedHandler.Output():
-			// Setting the id mapping
-			svc.orderMtx.Lock()
-			svc.idMapper[orderData.OrderID] = orderData.ClientOrderID
-			svc.orderMtx.Unlock()
+			// Bail out if there's no ClientOrderID
+			clientId := orderData.ClientOrderID
+			if clientId == "" {
+				continue
+			}
+			svc.registerClientId(orderData.OrderID, clientId)
 
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order received data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
+				if wrapper.dto.ID == clientId {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Debugf("sending data for order %s", wrapper.dto.ID)
 					default:
 						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
 					}
@@ -370,7 +380,7 @@ func (svc *streamSvc) orderReceivedStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order received data to working orders")
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
+			svc.updateWorkingOrders(clientId, orderData)
 		}
 	}
 }
@@ -381,12 +391,22 @@ func (svc *streamSvc) orderOpenStreamSink() {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderOpenHandler.Output():
+			// Find the client ID
+			clientId := svc.GetClientOrderIDFromOrderID(orderData.OrderID)
+
+			// Bail if not found
+			if clientId == "" {
+				continue
+			}
+
+			// Send the data
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order open data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
+				if wrapper.dto.ID == clientId {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Debugf("sending data for order %s", wrapper.dto.ID)
 					default:
 						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
 					}
@@ -396,7 +416,7 @@ func (svc *streamSvc) orderOpenStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order open data to working orders")
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
+			svc.updateWorkingOrders(clientId, orderData)
 		}
 	}
 }
@@ -407,12 +427,22 @@ func (svc *streamSvc) orderDoneStreamSink() {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderDoneHandler.Output():
+			// Find the client ID
+			clientId := svc.GetClientOrderIDFromOrderID(orderData.OrderID)
+
+			// Bail if not found
+			if clientId == "" {
+				continue
+			}
+
+			// Send the data
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order done data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
+				if wrapper.dto.ID == clientId {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Debugf("sending data for order %s", wrapper.dto.ID)
 					default:
 						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
 					}
@@ -422,7 +452,7 @@ func (svc *streamSvc) orderDoneStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order done data to working orders")
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
+			svc.updateWorkingOrders(clientId, orderData)
 		}
 	}
 }
@@ -433,12 +463,18 @@ func (svc *streamSvc) orderMatchStreamSink() {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderMatchHandler.Output():
+			// Find the client ID
+			takerId := svc.GetClientOrderIDFromOrderID(orderData.TakerOrderID)
+			makerId := svc.GetClientOrderIDFromOrderID(orderData.MakerOrderID)
+
+			// Send the data
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order match data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == svc.idMapper[orderData.MakerOrderID] || wrapper.dto.ID == svc.idMapper[orderData.TakerOrderID] {
+				if wrapper.dto.ID == makerId || wrapper.dto.ID == takerId {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Debugf("sending data for order %s", wrapper.dto.ID)
 					default:
 						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
 					}
@@ -448,8 +484,8 @@ func (svc *streamSvc) orderMatchStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order match data to working orders")
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.MakerOrderID), orderData)
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.TakerOrderID), orderData)
+			svc.updateWorkingOrders(takerId, orderData)
+			svc.updateWorkingOrders(makerId, orderData)
 		}
 	}
 }
@@ -460,12 +496,22 @@ func (svc *streamSvc) orderChangeStreamSink() {
 		case <-svc.stop:
 			return
 		case orderData := <-svc.orderChangeHandler.Output():
+			// Find the client ID
+			clientId := svc.GetClientOrderIDFromOrderID(orderData.OrderID)
+
+			// Bail if not found
+			if clientId == "" {
+				continue
+			}
+
+			// Send the data
 			svc.orderMtx.RLock()
 			svc.log.Debug("sending order change data to streams")
 			for _, wrapper := range svc.orderStreams {
-				if wrapper.dto.ID == svc.idMapper[orderData.OrderID] {
+				if wrapper.dto.ID == clientId {
 					select {
 					case wrapper.stream <- orderData.ToDTO(wrapper.dto):
+						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Debugf("sending data for order %s", wrapper.dto.ID)
 					default:
 						log.WithField("dto", orderData.ToDTO(wrapper.dto)).Warn("skipping blocked order stream")
 					}
@@ -475,7 +521,7 @@ func (svc *streamSvc) orderChangeStreamSink() {
 
 			// Update working orders
 			svc.log.Debug("adding order change data to working orders")
-			svc.updateWorkingOrders(svc.GetClientOrderIDFromOrderID(orderData.OrderID), orderData)
+			svc.updateWorkingOrders(clientId, orderData)
 		}
 	}
 }

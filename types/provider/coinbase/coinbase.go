@@ -124,6 +124,9 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		ID:           cid.String(),
 		Status:       getStatus(placedOrder),
 	}
+
+	// Register client ID
+	p.streamSvc.registerClientId(placedOrder.ID, cid.String())
 	return
 }
 
@@ -301,6 +304,7 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 	} else {
 		ord.Paid = decimal.Zero
 	}
+	p.streamSvc.registerClientId(raw.ID, id)
 	return
 }
 
