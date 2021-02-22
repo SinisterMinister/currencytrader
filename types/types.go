@@ -75,8 +75,10 @@ type Market interface {
 	AverageTradeVolume() (decimal.Decimal, error)
 	BaseCurrency() Currency
 	Candles(interval CandleInterval, start time.Time, end time.Time) ([]Candle, error)
+	MaxFunds() decimal.Decimal
 	MaxPrice() decimal.Decimal
 	MaxQuantity() decimal.Decimal
+	MinFunds() decimal.Decimal
 	MinPrice() decimal.Decimal
 	MinQuantity() decimal.Decimal
 	Name() string
@@ -97,6 +99,8 @@ type MarketDTO struct {
 	PriceIncrement   decimal.Decimal
 	MinQuantity      decimal.Decimal
 	MaxQuantity      decimal.Decimal
+	MinFunds         decimal.Decimal
+	MaxFunds         decimal.Decimal
 	QuantityStepSize decimal.Decimal
 }
 

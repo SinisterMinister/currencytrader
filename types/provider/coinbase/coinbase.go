@@ -256,6 +256,8 @@ func (p *provider) Markets() (mkts []types.MarketDTO, err error) {
 			PriceIncrement:   decimal.RequireFromString(product.QuoteIncrement),
 			MinQuantity:      decimal.RequireFromString(product.BaseMinSize),
 			MaxQuantity:      decimal.RequireFromString(product.BaseMaxSize),
+			MinFunds: decimal.RequireFromString(product.MinMarketFunds),
+			MaxFunds: decimal.RequireFromString(product.MaxMarketFunds),
 			QuantityStepSize: p.getCurrency(product.BaseCurrency).Increment,
 		})
 	}
