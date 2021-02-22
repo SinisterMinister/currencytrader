@@ -12,7 +12,6 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sinisterminister/coinfactory v0.0.0-20190803053850-cf70617b6a0e
 	github.com/sinisterminister/go-coinbasepro/v2 v2.1.0
-	github.com/sinisterminister/moneytree v0.0.0-20210122231239-b3c2dab74b19 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/thoas/go-funk v0.7.0
 	gopkg.in/go-playground/validator.v9 v9.30.0
