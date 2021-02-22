@@ -45,6 +45,10 @@ func (m *market) MinQuantity() decimal.Decimal { return m.dto.MinQuantity }
 
 func (m *market) MaxQuantity() decimal.Decimal { return m.dto.MaxQuantity }
 
+func (m *market) MinFunds() decimal.Decimal { return m.dto.MinFunds }
+
+func (m *market) MaxFunds() decimal.Decimal { return m.dto.MaxFunds }
+
 func (m *market) QuantityStepSize() decimal.Decimal { return m.dto.QuantityStepSize }
 
 func (m *market) Ticker() (types.Ticker, error) {
