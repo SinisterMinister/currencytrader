@@ -23,7 +23,7 @@ type streamSvc struct {
 
 	orderMtx      sync.RWMutex
 	orderStreams  map[<-chan bool]*orderStreamWrapper
-	workingOrders map[string]workingOrder
+	workingOrders map[string]*workingOrder
 	idMapper      map[string]string
 
 	tickerMtx     sync.RWMutex
@@ -31,9 +31,9 @@ type streamSvc struct {
 }
 
 type workingOrder struct {
-	id      string
-	doneAt  time.Time
-	updates []interface{}
+	id          string
+	expireTimer *time.Timer
+	updates     []interface{}
 }
 
 func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
@@ -42,7 +42,7 @@ func newStreamService(stop <-chan bool, wsSvc *websocketSvc) (svc *streamSvc) {
 		wsSvc:         wsSvc,
 		orderStreams:  make(map[<-chan bool]*orderStreamWrapper),
 		tickerStreams: make(map[types.MarketDTO]chan types.TickerDTO),
-		workingOrders: make(map[string]workingOrder),
+		workingOrders: make(map[string]*workingOrder),
 		log:           log.WithField("source", "coinbase.streamSvc"),
 		idMapper:      map[string]string{},
 	}
@@ -330,10 +330,17 @@ func (svc *streamSvc) updateWorkingOrders(id string, data interface{}) {
 	svc.orderMtx.Lock()
 	defer svc.orderMtx.Unlock()
 	if _, ok := svc.workingOrders[id]; !ok {
-		svc.workingOrders[id] = workingOrder{id: id, updates: []interface{}{}}
+		svc.workingOrders[id] = &workingOrder{id: id, updates: []interface{}{}, expireTimer: time.NewTimer(viper.GetDuration("coinbase.websocket.workingOrderExpiration"))}
+		go func(ord *workingOrder) {
+			<-ord.expireTimer.C
+			svc.orderMtx.Lock()
+			delete(svc.workingOrders, ord.id)
+			svc.orderMtx.Unlock()
+		}(svc.workingOrders[id])
 	}
 	order := svc.workingOrders[id]
 	order.updates = append(order.updates, data)
+	order.expireTimer.Reset(viper.GetDuration("coinbase.websocket.workingOrderExpiration"))
 	svc.workingOrders[id] = order
 }
 

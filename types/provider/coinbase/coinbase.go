@@ -111,6 +111,9 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		}
 	}
 
+	// Register client ID
+	p.streamSvc.registerClientId(placedOrder.ID, cid.String())
+
 	if req.Type == order.Market {
 		req.Price, _ = decimal.NewFromString(placedOrder.Price)
 	}
@@ -125,8 +128,6 @@ func (p *provider) AttemptOrder(req types.OrderRequestDTO) (dto types.OrderDTO, 
 		Status:       getStatus(placedOrder),
 	}
 
-	// Register client ID
-	p.streamSvc.registerClientId(placedOrder.ID, cid.String())
 	return
 }
 
@@ -256,8 +257,8 @@ func (p *provider) Markets() (mkts []types.MarketDTO, err error) {
 			PriceIncrement:   decimal.RequireFromString(product.QuoteIncrement),
 			MinQuantity:      decimal.RequireFromString(product.BaseMinSize),
 			MaxQuantity:      decimal.RequireFromString(product.BaseMaxSize),
-			MinFunds: decimal.RequireFromString(product.MinMarketFunds),
-			MaxFunds: decimal.RequireFromString(product.MaxMarketFunds),
+			MinFunds:         decimal.RequireFromString(product.MinMarketFunds),
+			MaxFunds:         decimal.RequireFromString(product.MaxMarketFunds),
 			QuantityStepSize: p.getCurrency(product.BaseCurrency).Increment,
 		})
 	}
@@ -274,6 +275,9 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 	if err != nil {
 		return
 	}
+
+	// Register the client id with the stream service to capture data
+	p.streamSvc.registerClientId(raw.ID, id)
 
 	// Normalize the price, size, and funds
 	price, _ := decimal.NewFromString(raw.Price)
@@ -306,7 +310,6 @@ func (p *provider) Order(market types.MarketDTO, id string) (ord types.OrderDTO,
 	} else {
 		ord.Paid = decimal.Zero
 	}
-	p.streamSvc.registerClientId(raw.ID, id)
 	return
 }
 
