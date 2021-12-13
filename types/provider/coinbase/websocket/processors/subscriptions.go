@@ -17,6 +17,8 @@ func NewSubscriptions(stop <-chan bool, svc subscriptionsService) (Subscriptions
 		svc:   svc,
 	}
 
+	instance.start(stop)
+
 	return &instance, nil
 }
 
@@ -32,5 +34,21 @@ type subscriptions struct {
 }
 
 func (proc *subscriptions) Input() (input chan<- types.Subscriptions) {
-	return
+	return proc.input
+}
+
+func (proc *subscriptions) start(stop <-chan bool) {
+
+	for {
+		select {
+		// Kill switch flipped
+		case <-stop:
+			return
+
+		// Handle input data
+		case subs := <-proc.input:
+			proc.svc.UpdateSubscriptions(subs)
+
+		}
+	}
 }
